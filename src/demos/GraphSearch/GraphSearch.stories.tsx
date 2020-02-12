@@ -73,5 +73,7 @@ storiesOf("Graph Search", module).add("sample", () => {
 
   const graph: DrawnGraphNode[] = [a, b, c, d];
 
-  return <GraphSearch search={search} graph={graph} />;
+  const goals = new Set([d]);
+
+  return <GraphSearch search={search} graph={graph} start={a} goals={goals} />;
 });

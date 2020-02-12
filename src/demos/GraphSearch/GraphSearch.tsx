@@ -7,17 +7,19 @@ import { StepPlayer } from "../../components/StepPlayer/StepPlayer";
 import { Mermaid } from "../../components/Mermaid/Mermaid";
 import { css } from "emotion";
 import { ISearch } from "../../algorithms/DiscreteSearch/search";
+import { GraphNode } from "../../dataStructures/Graph";
 
 interface IGraphSearchProps {
   search: ISearch,
-  graph: DrawnGraph
+  graph: DrawnGraph,
+  start: GraphNode,
+  goals: Set<GraphNode>
 };
 
 const graphContainerCss = css({
   display: "inline-block",
   border: "1px solid #444",
 });
-
 
 export const GraphSearch: React.FC<IGraphSearchProps> = ({ search, graph }) => {
   const [runtime, setRuntime] = useState(() => {
