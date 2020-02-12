@@ -16,8 +16,8 @@ const flowchart = {
     start("Start");
     initOpenSet["Create a 'stack' of graph nodes.<br/>Push 'start node' onto the 'stack'"];
     initCurrentNode["Set 'current node' to 'start node'"];
-    isGoal{{"Is the 'current node' the goal?"}};
     isEmpty{{"Is the 'stack' empty?"}};
+    isGoal{{"Is the 'current node' the goal?"}};
     takeFromOpenSet["Pop the top node off the 'stack'<br/>Set 'current node' to this value."];
     expand["Expand the 'current node' into a 'set of neighbours'"];
     neighbours["Push each node in the 'set of neighbours'<br/> onto the top of the 'stack'"];
@@ -26,14 +26,14 @@ const flowchart = {
 
     start-->initOpenSet;
     initOpenSet-->initCurrentNode;
-    initCurrentNode-->isGoal;
-    isGoal-- Yes -->goal;
-    isGoal-- No -->isEmpty;
+    initCurrentNode-->isEmpty;
     isEmpty-- Yes -->noPath;
-    isEmpty-- No -->takeFromOpenSet;
+    isEmpty-- No -->isGoal;
+    isGoal-- Yes -->goal;
+    isGoal-- No -->takeFromOpenSet;
     takeFromOpenSet-->expand;
     expand-->neighbours;
-    neighbours-->isGoal;
+    neighbours-->isEmpty;
   `,
   steps: new Set([
     Status.Start,

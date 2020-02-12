@@ -77,15 +77,15 @@ export function* search(
   let current = start;
   yield stepResult(Status.InitCurrentNode, {});
 
-  while (!isGoal(current)) {
-    yield stepResult(Status.IsGoal, { choice: false });
+  while (!openSet.isEmpty()) {
+    yield stepResult(Status.IsEmpty, { choice: false });
 
-    if (openSet.isEmpty()) {
-      yield stepResult(Status.IsEmpty, { choice: true });
-      yield stepResult(Status.NoPath, {});
+    if (isGoal(current)) {
+      yield stepResult(Status.IsGoal, { choice: true });
+      yield stepResult(Status.Goal, {});
       return;
     }
-    yield stepResult(Status.IsEmpty, { choice: false });
+    yield stepResult(Status.IsGoal, { choice: false });
 
     current = openSet.remove();
     yield stepResult(Status.TakeFromOpenSet, {});
@@ -143,7 +143,7 @@ export function* search(
     yield stepResult(Status.Neighbours, { neighbours });
   }
 
-  yield stepResult(Status.Goal, {});
+  yield stepResult(Status.NoPath, {});
 }
 
 export interface ISearch {
