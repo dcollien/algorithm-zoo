@@ -20,7 +20,7 @@ const flowchart = {
     isGoal{{"Is the 'current node' the goal?"}};
     takeFromOpenSet["Pop the top node off the 'stack'<br/>Set 'current node' to this value."];
     expand["Expand the 'current node' into a 'set of neighbours'"];
-    neighbours["Push each node in the 'set of neighbours'<br/> onto the top of the 'stack'"];
+    neighbours["Push each node in the 'set of neighbours'<br/> onto the top of the 'stack',<br/>skipping any nodes which have already been opened."];
     noPath("No path found.");
     goal("Path to goal found.");
 
@@ -46,7 +46,17 @@ const flowchart = {
     Status.Neighbours,
     Status.NoPath,
     Status.Goal
-  ])
+  ]),
+  decisions: {
+    [Status.IsEmpty]: {
+      "Yes": 3,
+      "No": 4
+    },
+    [Status.IsGoal]: {
+      "Yes": 5,
+      "No": 6
+    }
+  }
 };
 
 export const DepthFirstSearch: ISearch = {

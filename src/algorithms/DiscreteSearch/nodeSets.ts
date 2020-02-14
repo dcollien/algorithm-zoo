@@ -6,6 +6,7 @@ export interface NodeSet {
   insert: (node: GraphNode, rank?: number) => void;
   remove: () => GraphNode;
   decreaseRankTo?: (node: GraphNode, rank: number) => void;
+  members: () => GraphNode[];
 }
 
 export class PriorityNodeSet implements NodeSet {
@@ -41,6 +42,14 @@ export class PriorityNodeSet implements NodeSet {
     }
     this.heap.decreaseKey(heapNode, rank);
   }
+
+  members() {
+    const graphNodes = new Array<GraphNode>(this.nodes.size);
+    for (const [node] of this.nodes.entries()) {
+      graphNodes.push(node);
+    }
+    return graphNodes;
+  }
 }
 
 export class StackNodeSet implements NodeSet {
@@ -65,6 +74,10 @@ export class StackNodeSet implements NodeSet {
   isEmpty() {
     return this.stack.length === 0;
   }
+
+  members() {
+    return [...this.stack];
+  }
 }
 
 export class QueueNodeSet implements NodeSet {
@@ -88,5 +101,9 @@ export class QueueNodeSet implements NodeSet {
 
   isEmpty() {
     return this.queue.length === 0;
+  }
+
+  members() {
+    return [...this.queue];
   }
 }

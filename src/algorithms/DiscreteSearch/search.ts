@@ -17,7 +17,7 @@ export enum Status {
   Neighbours = "neighbours",
   NoPath = "noPath",
   BetterNeighbour = "betterNeighbour",
-  WorseNeighbour = "worseNeighbour",
+  SkipNeighbour = "skipNeighbour",
   NewNeighbour = "newNeighbour",
   Goal = "goal"
 }
@@ -30,18 +30,28 @@ function getPathNodes(destination: GraphNode, paths: Map<GraphNode, Path>) {
     nodes.unshift(current);
     current = paths.get(current)!.previous;
   }
+  nodes.unshift(current);
 
   return nodes;
 }
 
-interface SearchStepResult {
+export interface SearchStepResult {
   status: Status;
-  currentNode: GraphNode;
-  openSet: NodeSet;
+  currentNode: GraphNode | null;
+  openSet: NodeSet | null;
+  closedSet?: Set<GraphNode>;
   getBestPath: () => GraphNode[];
   neighbours?: Edge[];
   currentNeighbour?: GraphNode;
+  choice?: boolean;
 }
+
+export const startResult = {
+  status: Status.Start,
+  currentNode: null,
+  openSet: null,
+  getBestPath: () => []
+};
 
 export function* search(
   start: GraphNode,
@@ -51,6 +61,7 @@ export function* search(
   calculateRank?: (node: GraphNode, pathCost: number) => number
 ): Generator<SearchStepResult> {
   const paths = new Map<GraphNode, Path>();
+  const closedSet = new Set<GraphNode>();
 
   const stepResult = (
     status: Status,
@@ -63,6 +74,7 @@ export function* search(
     status,
     currentNode: current,
     openSet,
+    closedSet,
     getBestPath,
     neighbours,
     choice,
@@ -88,6 +100,7 @@ export function* search(
     yield stepResult(Status.IsGoal, { choice: false });
 
     current = openSet.remove();
+    closedSet.add(current);
     yield stepResult(Status.TakeFromOpenSet, {});
 
     const currentPath = paths.get(current);
@@ -106,22 +119,22 @@ export function* search(
 
       if (existingPathToNeighbour !== undefined) {
         // another path to this neighbour was previously opened
-        if (pathCost < existingPathToNeighbour.cost) {
-          // update the path, as the new one has a lower-cost
+        if (openSet.decreaseRankTo && pathCost < existingPathToNeighbour.cost) {
+          // update the path, as this set supports decreasing ranks,
+          // and the new path has a lower cost
           existingPathToNeighbour.cost = pathCost;
           existingPathToNeighbour.previous = current;
           // change the rank in the queue (if supported)
-          if (openSet.decreaseRankTo) {
-            openSet.decreaseRankTo(neighbour, rank);
-          }
+          openSet.decreaseRankTo(neighbour, rank);
 
           yield stepResult(Status.BetterNeighbour, {
             neighbours,
             currentNeighbour: neighbour
           });
         } else {
-          // otherwise a better path already exists
-          yield stepResult(Status.WorseNeighbour, {
+          // otherwise skip this neighbour and
+          // use the other path
+          yield stepResult(Status.SkipNeighbour, {
             neighbours,
             currentNeighbour: neighbour
           });
@@ -149,7 +162,12 @@ export function* search(
 export interface ISearch {
   flowchart?: {
     mermaid: string,
-    steps: Set<Status>
+    steps: Set<Status>,
+    decisions: {
+      [key in Status]?: {
+        [key: string]: number
+      }
+    }
   },
   search(
     start: GraphNode,
