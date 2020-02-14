@@ -38,6 +38,7 @@ export interface IGraphSearchProps {
   isAnimating: boolean;
   nodeStyles?: Map<GraphNode, NodeStyle>;
   edgeStyles?: Map<Edge, EdgeStyle>;
+  className?: string;
 }
 
 const drawEdges = (
@@ -132,7 +133,8 @@ export const Graph: React.FC<IGraphSearchProps> = ({
   nodeStyles,
   edgeStyles,
   onUpdate,
-  isAnimating
+  isAnimating,
+  className
 }) => {
   const render = (ctx: CanvasRenderingContext2D) => {
     ctx.clearRect(0, 0, width, height);
@@ -148,6 +150,7 @@ export const Graph: React.FC<IGraphSearchProps> = ({
 
   return (
     <AnimatedCanvas
+      className={className}
       width={width}
       height={height}
       onFrame={onUpdate}

@@ -29,6 +29,7 @@ interface IStepPlayer {
   onStop: () => void;
   onReset: () => void;
   canStep: boolean;
+  canReset: boolean;
 }
 
 export const StepPlayer: React.FC<IStepPlayer> = ({
@@ -36,7 +37,8 @@ export const StepPlayer: React.FC<IStepPlayer> = ({
   onPlay,
   onStop,
   onReset,
-  canStep
+  canStep,
+  canReset
 }) => {
   const [isPlaying, setIsPlaying] = useState(false);
 
@@ -102,6 +104,7 @@ export const StepPlayer: React.FC<IStepPlayer> = ({
           as={Button}
           className={buttonCss}
           onClick={resetHandler}
+          disabled={!canReset}
         >
           <FontAwesomeIcon icon={faBackward} /> Reset
         </ToolbarItem>

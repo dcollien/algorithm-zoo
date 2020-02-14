@@ -9,6 +9,7 @@ export interface IAnimatedCanvasProps {
   onFrame: UpdateHandler;
   render: ContextRenderer;
   isAnimating?: boolean;
+  className?: string;
 }
 
 class Runtime {
@@ -59,7 +60,8 @@ export const AnimatedCanvas: React.FC<IAnimatedCanvasProps> = ({
   height,
   onFrame,
   render,
-  isAnimating = true
+  isAnimating = true,
+  className
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [runtime, setRuntime] = useState<Runtime>();
@@ -86,7 +88,8 @@ export const AnimatedCanvas: React.FC<IAnimatedCanvasProps> = ({
     } else {
       runtime?.stop();
     }
+    return () => runtime?.stop();
   }, [runtime, isAnimating]);
 
-  return <canvas width={width} height={height} ref={canvasRef}></canvas>;
+  return <canvas className={className} width={width} height={height} ref={canvasRef}></canvas>;
 };

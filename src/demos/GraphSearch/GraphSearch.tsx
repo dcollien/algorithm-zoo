@@ -2,17 +2,18 @@ import React, { useState, useEffect } from "react";
 
 import "milligram";
 
-import { Graph, DrawnGraph, NodeStyle, EdgeStyle } from "../../components/Graph/Graph";
+import { Graph, DrawnGraph, NodeStyle, EdgeStyle, DrawnGraphNode } from "../../components/Graph/Graph";
 import { StepPlayer } from "../../components/StepPlayer/StepPlayer";
 import { Mermaid } from "../../components/Mermaid/Mermaid";
 import { css } from "emotion";
 import {
   ISearch,
   startResult,
-  SearchStepResult,
-  Status
+  SearchStepResult
 } from "../../algorithms/DiscreteSearch/search";
 import { GraphNode, Edge } from "../../dataStructures/Graph";
+import { DataCollectionDiagram } from "../../components/DataCollectionDiagram/DataCollectionDiagram";
+import { IMember } from "../../algorithms/DiscreteSearch/nodeSets";
 
 interface IGraphSearchProps {
   search: ISearch;
@@ -31,9 +32,20 @@ const rowCss = css({
 });
 
 const graphContainerCss = css({
-  display: "inline-block",
+  display: "inline-block"
+});
+
+const graphCss = css({
   border: "1px solid #444"
 });
+
+const convertCollectionMember = (member: IMember) => {
+  const node: DrawnGraphNode = member.value;
+  return {
+    rank: member.rank,
+    value: node.label || ''
+  };
+};
 
 export const GraphSearch: React.FC<IGraphSearchProps> = ({
   search,
@@ -52,7 +64,7 @@ export const GraphSearch: React.FC<IGraphSearchProps> = ({
   const [searchGenerator, setSearchGenerator] = useState(() =>
     search.search(start, isGoal, heuristic)
   );
-  const [searchStep, setSearchStep] = useState<SearchStepResult | undefined>(startResult);
+  const [searchStep, setSearchStep] = useState<SearchStepResult>(startResult);
   const [nodeStyles, setNodeStyles] = useState<Map<GraphNode, NodeStyle>>(
     () => new Map<GraphNode, NodeStyle>()
   );
@@ -65,92 +77,83 @@ export const GraphSearch: React.FC<IGraphSearchProps> = ({
     search.flowchart?.steps.has(candidateSearchStep.status);
 
   useEffect(() => {
-    // continue rendering when the graph or styles update
-    console.log("Render");
-    setIsRendering(true);
-  }, [graph, nodeStyles]);
+    nodeStyles.clear();
+    edgeStyles.clear();
 
-  useEffect(() => {
-    if (searchStep !== undefined) {
-      nodeStyles.clear();
-      edgeStyles.clear();
-
-      graph.map((node) => {
-        node.edges?.forEach(edge => {
-          edgeStyles.set(edge, {
-            stroke: "#999"
-          });
-        });
-        nodeStyles.set(node, {
-          fill: "#eee",
+    graph.map((node) => {
+      node.edges?.forEach(edge => {
+        edgeStyles.set(edge, {
           stroke: "#999"
         });
       });
-
-      // Style the closed set
-      if (searchStep.closedSet !== undefined) {
-        searchStep.closedSet.forEach((node: GraphNode) => {
-          node.edges?.forEach(edge => {
-            edgeStyles.delete(edge);
-          });
-          nodeStyles.delete(node);
-        });
-      }
-
-      // Style the open set
-      if (searchStep.openSet !== null) {
-        searchStep.openSet.members().forEach((node: GraphNode) => {
-          nodeStyles.set(node, {
-            fill: "#ccf",
-            labelColor: "black"
-          });
-        });
-      }
-
-      // Style the path
-      const path = searchStep.getBestPath();
-      path.map((node, i) => {
-        const nextIndex = i + 1;
-        const nextNode = i < path.length ? path[nextIndex] : null;
-
-        if (nextNode) {
-          node.edges?.forEach(edge => {
-            if (edge.destination === nextNode) {
-              edgeStyles.set(edge, {
-                stroke: "#0f4"
-              });
-            }
-          });
-        }
+      nodeStyles.set(node, {
+        fill: "#eee",
+        stroke: "#999"
       });
+    });
 
-      // Style the neighbours
-      if (searchStep.neighbours !== undefined) {
-        searchStep.neighbours.forEach((edge) => {
-          edgeStyles.set(edge, {
-            stroke: "red"
-          });
-        })
-      }
+    // Style the closed set
+    if (searchStep.closedSet !== undefined) {
+      searchStep.closedSet.forEach((node: GraphNode) => {
+        node.edges?.forEach(edge => {
+          edgeStyles.delete(edge);
+        });
+        nodeStyles.delete(node);
+      });
+    }
 
-      // Currently Selected Node
-      if (searchStep.currentNode !== null) {
-        nodeStyles.set(searchStep.currentNode, {
-          fill: "#44f",
-          labelColor: "white"
+    // Style the open set
+    if (searchStep.openSet !== null) {
+      searchStep.openSet.members().forEach((member: {
+        value: GraphNode,
+        rank?: number
+      }) => {
+        nodeStyles.set(member.value, {
+          fill: "#ccf",
+          labelColor: "black"
+        });
+      });
+    }
+
+    // Style the path
+    const path = searchStep.getBestPath();
+    path.map((node, i) => {
+      const nextIndex = i + 1;
+      const nextNode = i < path.length ? path[nextIndex] : null;
+
+      if (nextNode) {
+        node.edges?.forEach(edge => {
+          if (edge.destination === nextNode) {
+            edgeStyles.set(edge, {
+              stroke: "#0f4"
+            });
+          }
         });
       }
+    });
 
-      setNodeStyles(nodeStyles);
-      setEdgeStyles(edgeStyles);
-    } else {
-      setNodeStyles(new Map<GraphNode, NodeStyle>());
-      setEdgeStyles(new Map<Edge, EdgeStyle>());
+    // Style the neighbours
+    if (searchStep.neighbours !== undefined) {
+      searchStep.neighbours.forEach((edge) => {
+        edgeStyles.set(edge, {
+          stroke: "red"
+        });
+      })
     }
+
+    // Currently Selected Node
+    if (searchStep.currentNode !== null) {
+      nodeStyles.set(searchStep.currentNode, {
+        fill: "#44f",
+        labelColor: "white"
+      });
+    }
+
+    setNodeStyles(nodeStyles);
+    setEdgeStyles(edgeStyles);
   }, [searchStep]);
 
   const onUpdate = (dt: number) => {
-    // no need to continue rendering after one update
     setIsRendering(false);
   };
 
@@ -167,9 +170,11 @@ export const GraphSearch: React.FC<IGraphSearchProps> = ({
       nextSearchStep = nextResult.value;
     } while (!isStepInFlowchart(nextSearchStep));
 
-    if (!isDone) {
+    if (!isDone && nextSearchStep) {
       setSearchStep(nextSearchStep);
     }
+
+    setIsRendering(true);
   };
 
   const onPlay = () => {
@@ -191,11 +196,12 @@ export const GraphSearch: React.FC<IGraphSearchProps> = ({
     if (!canStep && isPlaying) {
       onStop();
     }
+    return () => {
+      window.clearInterval(playInterval);
+    }
   }, [canStep, isPlaying]);
 
   const onReset = () => {
-    setNodeStyles(new Map<GraphNode, NodeStyle>());
-    setEdgeStyles(new Map<Edge, EdgeStyle>());
     setSearchGenerator(search.search(start, isGoal, heuristic));
     setSearchStep(startResult);
     setCanStep(true);
@@ -226,11 +232,13 @@ export const GraphSearch: React.FC<IGraphSearchProps> = ({
           onStop={onStop}
           onReset={onReset}
           canStep={canStep}
+          canReset={!isPlaying}
         />
       </div>
       <div className={rowCss}>
         <div className={graphContainerCss}>
           <Graph
+            className={graphCss}
             width={width}
             height={height}
             isAnimating={isRendering}
@@ -239,6 +247,13 @@ export const GraphSearch: React.FC<IGraphSearchProps> = ({
             edgeStyles={edgeStyles}
             onUpdate={onUpdate}
           />
+          {searchStep.openSet && (
+            <DataCollectionDiagram members={
+              searchStep.openSet?.members().map(convertCollectionMember)
+            } dataType={searchStep.openSet?.dataType}
+            />
+          )}
+
         </div>
         <Mermaid id="flowchart">{styledChart}</Mermaid>
       </div>

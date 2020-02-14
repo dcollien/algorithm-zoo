@@ -1,15 +1,28 @@
-import { FibonacciHeap, INode } from '@tyriar/fibonacci-heap';
-import { GraphNode } from '../../dataStructures/Graph';
+import { FibonacciHeap, INode } from "@tyriar/fibonacci-heap";
+import { GraphNode } from "../../dataStructures/Graph";
+
+export interface IMember {
+  value: GraphNode;
+  rank?: number;
+}
+
+export enum DataType {
+  Stack = "stack",
+  Queue = "queue",
+  PriorityQueue = "pqueue"
+}
 
 export interface NodeSet {
+  dataType: DataType,
   isEmpty(): boolean;
   insert: (node: GraphNode, rank?: number) => void;
   remove: () => GraphNode;
   decreaseRankTo?: (node: GraphNode, rank: number) => void;
-  members: () => GraphNode[];
+  members: () => IMember[];
 }
 
 export class PriorityNodeSet implements NodeSet {
+  dataType = DataType.PriorityQueue;
   heap: FibonacciHeap<number, GraphNode>;
   nodes: Map<GraphNode, INode<number, GraphNode>>;
 
@@ -18,7 +31,7 @@ export class PriorityNodeSet implements NodeSet {
     this.nodes = new Map<GraphNode, INode<number, GraphNode>>();
   }
 
-  insert(node: GraphNode, rank=1) {
+  insert(node: GraphNode, rank = 1) {
     this.nodes.set(node, this.heap.insert(rank, node));
   }
 
@@ -44,15 +57,19 @@ export class PriorityNodeSet implements NodeSet {
   }
 
   members() {
-    const graphNodes = new Array<GraphNode>(this.nodes.size);
-    for (const [node] of this.nodes.entries()) {
-      graphNodes.push(node);
+    const memberArray = new Array<IMember>(this.nodes.size);
+    for (const [graphNode, heapNode] of this.nodes.entries()) {
+      memberArray.push({
+        value: graphNode,
+        rank: heapNode.key
+      });
     }
-    return graphNodes;
+    return memberArray;
   }
 }
 
 export class StackNodeSet implements NodeSet {
+  dataType = DataType.Stack;
   stack: Array<GraphNode>;
 
   constructor() {
@@ -76,11 +93,12 @@ export class StackNodeSet implements NodeSet {
   }
 
   members() {
-    return [...this.stack];
+    return this.stack.map(node => ({ value: node }));
   }
 }
 
 export class QueueNodeSet implements NodeSet {
+  dataType = DataType.Queue;
   queue: Array<GraphNode>;
 
   constructor() {
@@ -104,6 +122,6 @@ export class QueueNodeSet implements NodeSet {
   }
 
   members() {
-    return [...this.queue];
+    return this.queue.map(node => ({ value: node }));
   }
 }
