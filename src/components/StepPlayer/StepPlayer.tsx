@@ -77,7 +77,7 @@ export const StepPlayer: React.FC<IStepPlayer> = ({
           as={Button}
           className={buttonCss}
           onClick={stepHandler}
-          disabled={!canStep}
+          disabled={!canStep || isPlaying}
         >
           <FontAwesomeIcon icon={faStepForward} /> Step
         </ToolbarItem>

@@ -111,11 +111,11 @@ c.edges = [
 d.edges = [{ label: "1", weight: 1, destination: g }];
 g.edges = [
   { label: "2", weight: 2, destination: h },
-  { label: "1", weight: 1, destination: i }
+  { label: "2", weight: 2, destination: i }
 ];
 h.edges = [{ label: "1", weight: 1, destination: j }];
 j.edges = [{ label: "1", weight: 1, destination: k }];
-i.edges = [{ label: "4", weight: 4, destination: k }];
+i.edges = [{ label: "3", weight: 3, destination: k }];
 
 const graph: DrawnGraphNode[] = [a, b, c, d, e, f, g, h, i, j, k];
 

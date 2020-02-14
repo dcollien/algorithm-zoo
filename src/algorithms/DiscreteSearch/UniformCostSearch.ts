@@ -13,7 +13,7 @@ const flowchart = {
     isGoal{{"Is the 'current node' the goal?"}};
     takeFromOpenSet["Remove the lowest ranked node<br/>from the 'priority queue'.<br/>Set 'current node' to this value."];
     expand["Expand the 'current node'.<br/>Each neighbour's cost =<br/> (cost of 'current node') + (edge weight)"];
-    neighbours["Add any new neighbouring nodes<br/> to the 'priority queue', ranked by cost.<br/>Update the node's rank to the<br/> lower of the costs if already present."];
+    neighbours["Add any new neighbouring nodes<br/> to the 'priority queue', ranked by cost.<br/>Update the node's rank to the<br/> lower of the costs, if already present."];
     noPath("No path found.");
     goal("Path to goal found,<br>with lowest cost.");
 

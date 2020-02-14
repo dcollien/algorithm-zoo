@@ -1,8 +1,59 @@
-import { ISearch, search } from "./search";
+import { ISearch, search, Status } from "./search";
 import { PriorityNodeSet } from "./nodeSets";
 import { GraphNode } from "../../dataStructures/Graph";
 
+const flowchart = {
+  mermaid: `
+    graph TD;
+
+    start("Start");
+    initOpenSet["Create a 'priority queue' of graph nodes.<br/>Push 'start node' onto the 'priority queue'"];
+    initCurrentNode["Set 'current node' to 'start node'"];
+    isEmpty{{"Is the 'priority queue' empty?"}};
+    isGoal{{"Is the 'current node' the goal?"}};
+    takeFromOpenSet["Remove the lowest ranked node<br/>from the 'priority queue'.<br/>Set 'current node' to this value."];
+    expand["Expand the 'current node'."];
+    neighbours["Add any new neighbouring nodes<br/> to the 'priority queue', ranked by the heuristic.<br/>Update the node's rank to the<br/> lower of the ranks, if already present."];
+    noPath("No path found.");
+    goal("Path to goal found.");
+
+    start-->initOpenSet;
+    initOpenSet-->initCurrentNode;
+    initCurrentNode-->isGoal;
+    isGoal-- Yes -->goal;
+    isGoal-- No -->isEmpty;
+    isEmpty-- Yes -->noPath;
+    isEmpty-- No -->takeFromOpenSet;
+    takeFromOpenSet-->expand;
+    expand-->neighbours;
+    neighbours-->isGoal;
+  `,
+  steps: new Set([
+    Status.Start,
+    Status.InitOpenSet,
+    Status.InitCurrentNode,
+    Status.IsGoal,
+    Status.IsEmpty,
+    Status.TakeFromOpenSet,
+    Status.Expand,
+    Status.Neighbours,
+    Status.NoPath,
+    Status.Goal
+  ]),
+  decisions: {
+    [Status.IsGoal]: {
+      "Yes": 3,
+      "No": 4
+    },
+    [Status.IsEmpty]: {
+      "Yes": 5,
+      "No": 6
+    }
+  }
+};
+
 export const BestFirstSearch: ISearch = {
+  flowchart,
   *search(start, isGoal, heuristic) {
     const prioritySet = new PriorityNodeSet();
 
@@ -10,7 +61,7 @@ export const BestFirstSearch: ISearch = {
       throw new Error("Best First Search requires a heuristic");
     }
 
-    const calculateRank = (node: GraphNode, _pathCost: number) => heuristic(node);
+    const calculateRank = (node: GraphNode, _pathCost: number) => Math.floor(heuristic(node));
     yield* search(start, prioritySet, isGoal, undefined, calculateRank);
   }
 };

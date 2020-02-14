@@ -51,7 +51,7 @@ const DataItem: React.FC<IDataItem> = ({ value, rank }) => (
     {rank !== undefined && (
       <>
         {" "}
-        <span>{rank}</span>
+        <span>{Math.round(rank * 100)/100}</span>
       </>
     )}
   </div>
