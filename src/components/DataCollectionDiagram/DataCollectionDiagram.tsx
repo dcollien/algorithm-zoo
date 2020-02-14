@@ -4,7 +4,8 @@ import { DataType } from "../../algorithms/DiscreteSearch/nodeSets";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faExchangeAlt,
-  faLongArrowAltRight
+  faLongArrowAltRight,
+  faBalanceScaleLeft
 } from "@fortawesome/free-solid-svg-icons";
 
 interface IDataItem {
@@ -28,7 +29,11 @@ const itemCss = css({
   minWidth: "32px",
   borderRadius: "3px",
   backgroundColor: "#ccf",
-  color: "black"
+  color: "black",
+  "& span": {
+    fontWeight: "normal",
+    fontFamily: "monospace"
+  }
 });
 
 const emptyCss = css({
@@ -42,8 +47,13 @@ const emptyCss = css({
 
 const DataItem: React.FC<IDataItem> = ({ value, rank }) => (
   <div className={itemCss}>
-    <div>{value}</div>
-    {rank && <div>{rank}</div>}
+    {value}
+    {rank !== undefined && (
+      <>
+        {" "}
+        <span>{rank}</span>
+      </>
+    )}
   </div>
 );
 
@@ -75,12 +85,16 @@ const DataCollectionContainer: React.FC<{
         <FontAwesomeIcon icon={faExchangeAlt} />
       ) : dataType === DataType.Queue ? (
         <FontAwesomeIcon icon={faLongArrowAltRight} />
+      ) : dataType === DataType.PriorityQueue ? (
+        <FontAwesomeIcon icon={faBalanceScaleLeft} />
       ) : null}
     </div>
     <div className={dataDiagramCss}>{children}</div>
-    {dataType === DataType.Queue && (
+    {dataType === DataType.Queue ? (
       <FontAwesomeIcon icon={faLongArrowAltRight} />
-    )}
+    ) : dataType === DataType.PriorityQueue ? (
+      <div></div>
+    ) : null}
   </div>
 );
 
@@ -104,7 +118,7 @@ export const DataCollectionDiagram: React.FC<IDataCollectionDiagramProps> = ({
     return (
       <DataCollectionContainer dataType={dataType}>
         {items.map(item => (
-          <DataItem {...item} />
+          <DataItem key={item.value} {...item} />
         ))}
       </DataCollectionContainer>
     );
@@ -115,11 +129,11 @@ export const DataCollectionDiagram: React.FC<IDataCollectionDiagramProps> = ({
     return (
       <DataCollectionContainer dataType={dataType}>
         {firstPreview.map(item => (
-          <DataItem {...item} />
+          <DataItem key={item.value} {...item} />
         ))}
         <div>...</div>
         {lastPreview.map(item => (
-          <DataItem {...item} />
+          <DataItem key={item.value} {...item} />
         ))}
       </DataCollectionContainer>
     );

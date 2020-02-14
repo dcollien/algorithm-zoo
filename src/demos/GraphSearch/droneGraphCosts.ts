@@ -79,59 +79,49 @@ const k: DrawnGraphNode = {
 
 a.edges = [
   {
+    label: "1",
+    weight: 1,
     destination: b
   }
 ];
 b.edges = [
   {
+    label: "1",
+    weight: 1,
     destination: c
   },
   {
+    label: "3",
+    weight: 3,
     destination: d
   }
 ];
 c.edges = [
   {
+    label: "1",
+    weight: 1,
     destination: e
   },
   {
+    label: "2",
+    weight: 2,
     destination: f
   }
 ];
-d.edges = [
-  {
-    destination: g
-  }
-];
+d.edges = [{ label: "1", weight: 1, destination: g }];
 g.edges = [
-  {
-    destination: h
-  },
-  {
-    destination: i
-  }
+  { label: "2", weight: 2, destination: h },
+  { label: "1", weight: 1, destination: i }
 ];
-h.edges = [
-  {
-    destination: j
-  }
-];
-j.edges = [
-  {
-    destination: k
-  }
-];
-i.edges = [
-  {
-    destination: k
-  }
-];
+h.edges = [{ label: "1", weight: 1, destination: j }];
+j.edges = [{ label: "1", weight: 1, destination: k }];
+i.edges = [{ label: "4", weight: 4, destination: k }];
 
 const graph: DrawnGraphNode[] = [a, b, c, d, e, f, g, h, i, j, k];
 
 const goals = new Set([k]);
 
-export const droneGraph = {
+export const droneGraphCosts = {
   start: a,
   graph,
   goals

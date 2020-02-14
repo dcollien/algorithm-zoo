@@ -26,14 +26,14 @@ const flowchart = {
 
     start-->initOpenSet;
     initOpenSet-->initCurrentNode;
-    initCurrentNode-->isEmpty;
-    isEmpty-- Yes -->noPath;
-    isEmpty-- No -->isGoal;
+    initCurrentNode-->isGoal;
     isGoal-- Yes -->goal;
-    isGoal-- No -->takeFromOpenSet;
+    isGoal-- No -->isEmpty;
+    isEmpty-- Yes -->noPath;
+    isEmpty-- No -->takeFromOpenSet;
     takeFromOpenSet-->expand;
     expand-->neighbours;
-    neighbours-->isEmpty;
+    neighbours-->isGoal;
   `,
   steps: new Set([
     Status.Start,
@@ -48,18 +48,18 @@ const flowchart = {
     Status.Goal
   ]),
   decisions: {
-    [Status.IsEmpty]: {
+    [Status.IsGoal]: {
       "Yes": 3,
       "No": 4
     },
-    [Status.IsGoal]: {
+    [Status.IsEmpty]: {
       "Yes": 5,
       "No": 6
     }
   }
 };
 
-export const DepthFirstSearch: ISearch = {
+export const DepthFirstSearchRandom: ISearch = {
   flowchart,
   *search(start, isGoal) {
     const stack = new StackNodeSet();
@@ -71,5 +71,26 @@ export const DepthFirstSearch: ISearch = {
       return edges;
     };
     yield* search(start, stack, isGoal, expandNode);
+  }
+};
+
+export const DepthFirstSearchReversed: ISearch = {
+  flowchart,
+  *search(start, isGoal) {
+    const stack = new StackNodeSet();
+        // randomly order the expanded nodes
+        const expandNode = (node: GraphNode) => {
+          const edges = [...node.edges] || [];
+          return edges.reverse();
+        };
+    yield* search(start, stack, isGoal, expandNode);
+  }
+};
+
+export const DepthFirstSearch: ISearch = {
+  flowchart,
+  *search(start, isGoal) {
+    const stack = new StackNodeSet();
+    yield* search(start, stack, isGoal);
   }
 };

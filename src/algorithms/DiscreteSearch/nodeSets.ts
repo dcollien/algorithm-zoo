@@ -57,7 +57,7 @@ export class PriorityNodeSet implements NodeSet {
   }
 
   members() {
-    const memberArray = new Array<IMember>(this.nodes.size);
+    const memberArray = new Array<IMember>();
     for (const [graphNode, heapNode] of this.nodes.entries()) {
       memberArray.push({
         value: graphNode,

@@ -13,20 +13,20 @@ const flowchart = {
     isGoal{{"Is the 'current node' the goal?"}};
     takeFromOpenSet["Remove the front node from the 'queue'<br/>Set 'current node' to this value."];
     expand["Expand the 'current node' into a 'set of neighbours'"];
-    neighbours["Push each node in the 'set of neighbours'<br/> onto the top of the 'queue',<br/>skipping any nodes which have already been opened."];
+    neighbours["Add each node in the 'set of neighbours'<br/> onto the end of the 'queue',<br/>skipping any nodes which have already been opened."];
     noPath("No path found.");
-    goal("Path to goal found.");
+    goal("Path to goal found,<br/> with fewest steps.");
 
     start-->initOpenSet;
     initOpenSet-->initCurrentNode;
-    initCurrentNode-->isEmpty;
-    isEmpty-- Yes -->noPath;
-    isEmpty-- No -->isGoal;
+    initCurrentNode-->isGoal;
     isGoal-- Yes -->goal;
-    isGoal-- No -->takeFromOpenSet;
+    isGoal-- No -->isEmpty;
+    isEmpty-- Yes -->noPath;
+    isEmpty-- No -->takeFromOpenSet;
     takeFromOpenSet-->expand;
     expand-->neighbours;
-    neighbours-->isEmpty;
+    neighbours-->isGoal;
   `,
   steps: new Set([
     Status.Start,
@@ -41,11 +41,11 @@ const flowchart = {
     Status.Goal
   ]),
   decisions: {
-    [Status.IsEmpty]: {
+    [Status.IsGoal]: {
       "Yes": 3,
       "No": 4
     },
-    [Status.IsGoal]: {
+    [Status.IsEmpty]: {
       "Yes": 5,
       "No": 6
     }
