@@ -1,10 +1,9 @@
-import react, { useState, ChangeEvent } from "react";
+import React, { useState, ChangeEvent } from "react";
 import { DrawnGraphNode } from "../../components/Graph/Graph";
 import { droneGraph } from "./droneGraph";
 import { binaryTree } from "./binaryTree";
 import { ISearch } from "../../algorithms/DiscreteSearch/search";
 import { searches } from "../../algorithms/DiscreteSearch/searchChoices";
-import React from "react";
 import { SimpleSelector } from "../../components/SimpleSelector/SimpleSelector";
 import { GraphSearch } from "./GraphSearch";
 import { css } from "emotion";
@@ -106,8 +105,10 @@ export const UninformedSearch: React.FC<IUninformedSearchProps> = ({
   };
 
   const handleExampleChange = (example: string) => {
-    console.log(example);
-    setExampleGraph(examples[example]);
+    const exampleGraph = examples[example];
+    setExampleGraph(exampleGraph);
+    setStart(exampleGraph.start);
+    setGoal(exampleGraph.goals.values().next().value);
   };
 
   const handleStartChange = (event: ChangeEvent<HTMLSelectElement>) => {
