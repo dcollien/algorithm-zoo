@@ -1,9 +1,9 @@
-import { GraphNode, Edge } from "../../dataStructures/Graph";
+import { GraphNode, Edge, Graph } from "../../dataStructures/Graph";
 import { NodeSet } from "./nodeSets";
 
 interface Path {
   cost: number;
-  previous: GraphNode;
+  previous?: GraphNode;
 }
 
 export enum Status {
@@ -23,14 +23,25 @@ export enum Status {
 }
 
 function getPathNodes(destination: GraphNode, paths: Map<GraphNode, Path>) {
+  // Returns an array of nodes from the start node (included) to the destination node
+  // The start node is defined as a node with "previous" set to undefined,
+  // or a node whose "previous" does not exist in "paths"
   const nodes: GraphNode[] = [];
-  let current = destination;
+  let current: GraphNode = destination;
 
   while (paths.has(current)) {
     nodes.unshift(current);
-    current = paths.get(current)!.previous;
+    const node = paths.get(current)!;
+    if (node.previous !== undefined) {
+      current = node.previous;
+    } else {
+      break;
+    }
   }
-  nodes.unshift(current);
+
+  if (current !== undefined) {
+    nodes.unshift(current);
+  }
 
   return nodes;
 }
@@ -44,6 +55,7 @@ export interface SearchStepResult {
   neighbours?: Edge[];
   currentNeighbour?: GraphNode;
   choice?: boolean;
+  currentCost?: number;
 }
 
 export const startResult = {
@@ -76,6 +88,7 @@ export function* search(
     openSet,
     closedSet,
     getBestPath,
+    currentCost: currentPath?.cost,
     neighbours,
     choice,
     currentNeighbour
@@ -87,6 +100,11 @@ export function* search(
   yield stepResult(Status.InitOpenSet, {});
 
   let current = start;
+  let currentPath: Path | undefined = {
+    cost: 0
+  };
+  paths.set(current, currentPath);
+
   yield stepResult(Status.InitCurrentNode, {});
 
   while (!isGoal(current)) {
@@ -100,10 +118,11 @@ export function* search(
     yield stepResult(Status.IsEmpty, { choice: false });
 
     current = openSet.remove();
+    currentPath = paths.get(current);
+
     closedSet.add(current);
     yield stepResult(Status.TakeFromOpenSet, {});
 
-    const currentPath = paths.get(current);
     const neighbours = expandNode ? expandNode(current) : current.edges || [];
     yield stepResult(Status.Expand, { neighbours });
 

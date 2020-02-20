@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, Ref } from "react";
 
 import { css } from "emotion";
 
@@ -14,7 +14,7 @@ import {
   useToolbarState,
   Toolbar,
   ToolbarItem,
-  ToolbarSeparator
+  ToolbarSeparator,
 } from "reakit/Toolbar";
 import { Button } from "reakit/Button";
 

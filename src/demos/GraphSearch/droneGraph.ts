@@ -88,6 +88,9 @@ b.edges = [
   },
   {
     destination: d
+  },
+  {
+    destination: a
   }
 ];
 c.edges = [
@@ -96,11 +99,27 @@ c.edges = [
   },
   {
     destination: f
+  },
+  {
+    destination: b
   }
 ];
 d.edges = [
   {
     destination: g
+  },
+  {
+    destination: b
+  }
+];
+e.edges = [
+  {
+    destination: c
+  }
+];
+f.edges = [
+  {
+    destination: c
   }
 ];
 g.edges = [
@@ -109,23 +128,43 @@ g.edges = [
   },
   {
     destination: i
+  },
+  {
+    destination: d
   }
 ];
 h.edges = [
   {
     destination: j
+  },
+  {
+    destination: g
   }
 ];
 j.edges = [
   {
     destination: k
+  },
+  {
+    destination: h
   }
 ];
 i.edges = [
   {
     destination: k
+  },
+  {
+    destination: g
   }
 ];
+k.edges = [
+  {
+    destination: i
+  },
+  {
+    destination: j
+  }
+]
 
 const graph: DrawnGraphNode[] = [a, b, c, d, e, f, g, h, i, j, k];
 
@@ -134,5 +173,7 @@ const goals = new Set([k]);
 export const droneGraph = {
   start: a,
   graph,
-  goals
+  goals,
+  width: 480,
+  height: 540
 };

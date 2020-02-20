@@ -2,7 +2,14 @@ import React, { useState, useEffect } from "react";
 
 import "milligram";
 
-import { Graph, DrawnGraph, NodeStyle, EdgeStyle, DrawnGraphNode } from "../../components/Graph/Graph";
+import {
+  Graph,
+  DrawnGraph,
+  NodeStyle,
+  EdgeStyle,
+  DrawnGraphNode
+} from "../../components/Graph/Graph";
+import { NodeInfo } from "../../components/Graph/NodeInfo";
 import { StepPlayer } from "../../components/StepPlayer/StepPlayer";
 import { Mermaid } from "../../components/Mermaid/Mermaid";
 import { css } from "emotion";
@@ -14,15 +21,19 @@ import {
 import { GraphNode, Edge } from "../../dataStructures/Graph";
 import { DataCollectionDiagram } from "../../components/DataCollectionDiagram/DataCollectionDiagram";
 import { IMember } from "../../algorithms/DiscreteSearch/nodeSets";
+import { toolbarContainer } from "../../styles/toolbar";
 
 interface IGraphSearchProps {
   search: ISearch;
   graph: DrawnGraph;
   start: GraphNode;
   goals: Set<GraphNode>;
+  examples?: string[];
   heuristic?: (node: GraphNode) => number;
   width?: number;
   height?: number;
+  onExampleSelect?: (example: string) => void;
+  children?: React.ReactNode;
 }
 
 const rowCss = css({
@@ -31,19 +42,36 @@ const rowCss = css({
   flexWrap: "wrap"
 });
 
-const graphContainerCss = css({
-  display: "inline-block"
-});
+const toolbarCss = css`
+  ${toolbarContainer}
+  background: white;
+  border-bottom: 1px solid #eee;
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  padding-top: 8px;
+  z-index: 10;
+`;
 
-const graphCss = css({
-  border: "1px solid #444"
-});
+const graphContainerCss = css`
+  display: inline-block;
+`;
+
+const graphCss = css`
+  border: 1px solid #444;
+`;
+
+const environmentArea = css`
+  position: sticky;
+  top: 60px;
+  z-index: 0;
+`;
 
 const convertCollectionMember = (member: IMember) => {
   const node: DrawnGraphNode = member.value;
   return {
     rank: member.rank,
-    value: node.label || ''
+    value: node.label || ""
   };
 };
 
@@ -53,6 +81,7 @@ export const GraphSearch: React.FC<IGraphSearchProps> = ({
   start,
   goals,
   heuristic,
+  children,
   width = 720,
   height = 240
 }) => {
@@ -72,7 +101,9 @@ export const GraphSearch: React.FC<IGraphSearchProps> = ({
     () => new Map<Edge, EdgeStyle>()
   );
 
-  const isStepInFlowchart = (candidateSearchStep: SearchStepResult | undefined) =>
+  const isStepInFlowchart = (
+    candidateSearchStep: SearchStepResult | undefined
+  ) =>
     candidateSearchStep &&
     search.flowchart?.steps.has(candidateSearchStep.status);
 
@@ -80,7 +111,7 @@ export const GraphSearch: React.FC<IGraphSearchProps> = ({
     nodeStyles.clear();
     edgeStyles.clear();
 
-    graph.map((node) => {
+    graph.map(node => {
       node.edges?.forEach(edge => {
         edgeStyles.set(edge, {
           stroke: "#999"
@@ -104,15 +135,14 @@ export const GraphSearch: React.FC<IGraphSearchProps> = ({
 
     // Style the open set
     if (searchStep.openSet !== null) {
-      searchStep.openSet.members().forEach((member: {
-        value: GraphNode,
-        rank?: number
-      }) => {
-        nodeStyles.set(member.value, {
-          fill: "#ccf",
-          labelColor: "black"
+      searchStep.openSet
+        .members()
+        .forEach((member: { value: GraphNode; rank?: number }) => {
+          nodeStyles.set(member.value, {
+            fill: "#ccf",
+            labelColor: "black"
+          });
         });
-      });
     }
 
     // Style the path
@@ -134,11 +164,11 @@ export const GraphSearch: React.FC<IGraphSearchProps> = ({
 
     // Style the neighbours
     if (searchStep.neighbours !== undefined) {
-      searchStep.neighbours.forEach((edge) => {
+      searchStep.neighbours.forEach(edge => {
         edgeStyles.set(edge, {
           stroke: "red"
         });
-      })
+      });
     }
 
     // Currently Selected Node
@@ -153,8 +183,16 @@ export const GraphSearch: React.FC<IGraphSearchProps> = ({
     setEdgeStyles(edgeStyles);
   }, [searchStep]);
 
+  useEffect(() => {
+    onReset();
+  }, [graph, search, start, goals]);
+
+  useEffect(() => {
+    setIsRendering(true);
+  }, [width, height])
+
   const onUpdate = (dt: number) => {
-    setIsRendering(false);
+    //setIsRendering(false);
   };
 
   const onStep = () => {
@@ -198,34 +236,39 @@ export const GraphSearch: React.FC<IGraphSearchProps> = ({
     }
     return () => {
       window.clearInterval(playInterval);
-    }
+    };
   }, [canStep, isPlaying]);
 
   const onReset = () => {
     setSearchGenerator(search.search(start, isGoal, heuristic));
     setSearchStep(startResult);
     setCanStep(true);
+    setIsRendering(true);
   };
 
   const chart = search.flowchart?.mermaid || "";
   const styledChartSections = [chart];
 
   if (isStepInFlowchart(searchStep)) {
-    styledChartSections.push(`style ${searchStep?.status} stroke:#f66,stroke-width:2px`);
+    styledChartSections.push(
+      `style ${searchStep?.status} stroke:#f66,stroke-width:2px`
+    );
     if (searchStep?.choice !== undefined) {
       const decisionKey = searchStep?.choice ? "Yes" : "No";
       const decisions = search.flowchart?.decisions[searchStep?.status];
       if (decisions) {
-        styledChartSections.push(`linkStyle ${decisions[decisionKey]} stroke:#f66`);
+        styledChartSections.push(
+          `linkStyle ${decisions[decisionKey]} stroke:#f66`
+        );
       }
     }
   }
 
-  const styledChart = styledChartSections.join('\n');
+  const styledChart = styledChartSections.join("\n");
 
   return (
     <div>
-      <div className={rowCss}>
+      <div className={toolbarCss}>
         <StepPlayer
           onStep={onStep}
           onPlay={onPlay}
@@ -235,25 +278,35 @@ export const GraphSearch: React.FC<IGraphSearchProps> = ({
           canReset={!isPlaying}
         />
       </div>
+      <div>
+        {children}
+      </div>
       <div className={rowCss}>
         <div className={graphContainerCss}>
-          <Graph
-            className={graphCss}
-            width={width}
-            height={height}
-            isAnimating={isRendering}
-            graph={graph}
-            nodeStyles={nodeStyles}
-            edgeStyles={edgeStyles}
-            onUpdate={onUpdate}
-          />
-          {searchStep.openSet && (
-            <DataCollectionDiagram members={
-              searchStep.openSet?.members().map(convertCollectionMember)
-            } dataType={searchStep.openSet?.dataType}
+          <div className={environmentArea}>
+            <NodeInfo
+              currentNode={searchStep.currentNode}
+              cost={searchStep.currentCost}
             />
-          )}
-
+            <Graph
+              className={graphCss}
+              width={width}
+              height={height}
+              isAnimating={isRendering}
+              graph={graph}
+              nodeStyles={nodeStyles}
+              edgeStyles={edgeStyles}
+              onUpdate={onUpdate}
+            />
+            {searchStep.openSet && (
+              <DataCollectionDiagram
+                members={searchStep.openSet
+                  ?.members()
+                  .map(convertCollectionMember)}
+                dataType={searchStep.openSet?.dataType}
+              />
+            )}
+          </div>
         </div>
         <Mermaid id="flowchart">{styledChart}</Mermaid>
       </div>

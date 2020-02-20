@@ -5,106 +5,45 @@ import { searches } from "../../algorithms/DiscreteSearch/searchChoices";
 
 import { GraphSearch } from "./GraphSearch";
 import { ISearch } from "../../algorithms/DiscreteSearch/search";
-import { droneGraph } from "./droneGraph";
 import { droneGraphCosts } from "./droneGraphCosts";
 import { euclidean } from "../../algorithms/DiscreteSearch/heuristics";
 import { GraphNode } from "../../dataStructures/Graph";
+import { SimpleSelector } from "../../components/SimpleSelector/SimpleSelector";
+
+import { DrawnGraphNode } from "../../components/Graph/Graph";
+
+import { droneGraph } from "./droneGraph";
+import { binaryTree } from "./binaryTree";
+import { UninformedSearch, SearchStrategy } from "./UninformedSearch";
+
+interface IExampleGraph {
+  start: DrawnGraphNode;
+  graph: DrawnGraphNode[];
+  goals: Set<DrawnGraphNode>;
+  width: number;
+  height: number;
+  description: React.ReactNode;
+}
 
 storiesOf("Graph Search", module)
-  .add("Depth-First Search (Randomly Chosen)", () => {
-    const { start, graph, goals } = droneGraph;
-    const search: ISearch =
-      searches["Depth-First (Randomly Ordered Neighbours)"];
-
-    return (
-      <div>
-        Finding a path from A to K using Depth-First Search. 
-        When a node is expanded, the edges are visited in a random order.
-        The neighbouring nodes are added to a <em>stack</em> where they are then visited in a "first in, first out" order.
-        <hr/>
-        <GraphSearch
-          search={search}
-          graph={graph}
-          start={start}
-          goals={goals}
-          width={480}
-          height={540}
-        />
-      </div>
-    );
-  })
-  .add("Depth-First Search (Left First)", () => {
-    const { start, graph, goals } = droneGraph;
-    const search: ISearch =
-      searches["Depth-First (Reverse Ordered Neighbours)"];
-
-    return (
-      <div>
-        Finding a path from A to K using Depth-First Search.
-        When a node is expanded, the edges are visited left-to-right.
-        The neighbouring nodes are added to a <em>stack</em> where they are then visited in a "first in, first out" order.
-        <hr/>
-        <GraphSearch
-          search={search}
-          graph={graph}
-          start={start}
-          goals={goals}
-          width={480}
-          height={540}
-        />
-      </div>
-    );
-  })
-  .add("Depth-First Search (Right First)", () => {
-    const { start, graph, goals } = droneGraph;
-    const search: ISearch = searches["Depth-First"];
-
-    return (
-      <div>
-        Finding a path from A to K using Depth-First Search.
-        When a node is expanded, the edges are visited right-to-left.
-        The neighbouring nodes are added to a <em>stack</em> where they are then visited in a "first in, first out" order.
-        <hr/>
-        <GraphSearch
-          search={search}
-          graph={graph}
-          start={start}
-          goals={goals}
-          width={480}
-          height={540}
-        />
-      </div>
-    );
-  })
-  .add("Breadth-First Search", () => {
-    const { start, graph, goals } = droneGraph;
-    const search: ISearch = searches["Breadth-First"];
-
-    return (
-      <div>
-        Finding the path from A to K with the fewest edges, using Breadth-First Search.
-        The neighbouring nodes are added to a <em>queue</em> where they are then visited in a "last in, first out" order.
-        <hr/>
-        <GraphSearch
-          search={search}
-          graph={graph}
-          start={start}
-          goals={goals}
-          width={480}
-          height={540}
-        />
-      </div>
-    );
-  })
+  .add("Depth-First Search (Randomly Chosen)", () => (
+    <UninformedSearch searchStrategy={SearchStrategy.DFS_RANDOM} />
+  ))
+  .add("Depth-First Search (Left First)", () => (
+    <UninformedSearch searchStrategy={SearchStrategy.DFS_LEFT} />
+  ))
+  .add("Depth-First Search (Right First)", () => (
+    <UninformedSearch searchStrategy={SearchStrategy.DFS_RIGHT} />
+  ))
+  .add("Breadth-First Search", () => (
+    <UninformedSearch searchStrategy={SearchStrategy.BFS} />
+  ))
   .add("Uniform-Cost Search", () => {
     const { start, graph, goals } = droneGraphCosts;
     const search: ISearch = searches["Uniform Cost"];
 
     return (
       <div>
-        Finding the lowest-cost path from A to K using Uniform Cost Search.
-        The neighbouring nodes are added to a <em>priority queue</em> where they are then visited in order of the lowest cost path to the starting node.
-        <hr/>
         <GraphSearch
           search={search}
           graph={graph}
@@ -112,7 +51,14 @@ storiesOf("Graph Search", module)
           goals={goals}
           width={480}
           height={540}
-        />
+        >
+          Finding the lowest-cost path from A to K using Uniform Cost Search.
+          <br />
+          The neighbouring nodes are added to a <em>priority queue</em> where
+          they are then visited in order of the lowest cost path to the starting
+          node.
+          <hr />
+        </GraphSearch>
       </div>
     );
   })
@@ -123,10 +69,6 @@ storiesOf("Graph Search", module)
 
     return (
       <div>
-        Finding a from A to K using Best-First Search.
-        The neighbouring nodes are added to a <em>priority queue</em> where they are then visited in an order determined by a heuristic.
-        In this case the heuristic is the euclidean distance (in pixels) from K. This instructs the search to visit the nodes in the order of the geometrically closest to K first.
-        <hr/>
         <GraphSearch
           search={search}
           graph={graph}
@@ -135,7 +77,17 @@ storiesOf("Graph Search", module)
           width={480}
           height={540}
           heuristic={euclidean(goal)}
-        />
+        >
+          Finding any path from A to K using Best-First Search.
+          <br />
+          The neighbouring nodes are added to a <em>priority queue</em> where
+          they are then visited in an order determined by a heuristic.
+          <br />
+          In this case the heuristic is the euclidean distance (in pixels) from
+          K. This instructs the search to visit the nodes in the order of the
+          geometrically closest to K first.
+          <hr />
+        </GraphSearch>
       </div>
     );
   })
@@ -145,9 +97,6 @@ storiesOf("Graph Search", module)
 
     return (
       <div>
-        Finding the lowest-cost path from A to K using Uniform Cost Search.
-        The neighbouring nodes are added to a <em>priority queue</em> where they are then visited in order of the lowest cost path to the starting node.
-        <hr/>
         <GraphSearch
           search={search}
           graph={graph}
@@ -155,7 +104,14 @@ storiesOf("Graph Search", module)
           goals={goals}
           width={480}
           height={540}
-        />
+        >
+          Finding the lowest-cost path from A to K using Uniform Cost Search.
+          <br />
+          The neighbouring nodes are added to a <em>priority queue</em> where
+          they are then visited in order of the lowest cost path to the starting
+          node.
+          <hr />
+        </GraphSearch>
       </div>
     );
   })
@@ -168,13 +124,6 @@ storiesOf("Graph Search", module)
 
     return (
       <div>
-        Finding a from A to K using A* Search.
-        The neighbouring nodes are added to a <em>priority queue</em> where they are then visited in an order of the (lowest cost path to the starting node) + (a heuristic).
-        In this case the heuristic is the euclidean distance (in pixels) from K, divided by 150. 
-        The edge C to E has the largest distance to edge weight ratio, and the distance of this edge (of weight 1) is under 150 pixels.
-        Dividing by 150 will therefore ensure that the heuristic value will not dominate the edge costs. 
-        Such a heuristic is said to be "admissible", resulting in the search always finding the shortest cost path. 
-        <hr/>
         <GraphSearch
           search={search}
           graph={graph}
@@ -183,7 +132,22 @@ storiesOf("Graph Search", module)
           width={480}
           height={540}
           heuristic={heuristic}
-        />
+        >
+          Finding the shortest path from A to K using A* Search.
+          <br />
+          When a node is expended, the neighbouring nodes are added to a{" "}
+          <em>priority queue</em> where they are then visited in order, ranked
+          by (lowest cost path to the starting node) + (a heuristic).
+          <br />
+          In this case the heuristic is the euclidean distance (in pixels) from
+          K, divided by 150. The edge C to E has the largest distance to edge
+          weight ratio, and the distance of this edge (of weight 1) is under 150
+          pixels. Dividing by 150 will therefore ensure that the heuristic value
+          will not dominate the edge costs. Such a heuristic is said to be
+          "admissible", resulting in the search always finding the shortest cost
+          path.
+          <hr />
+        </GraphSearch>
       </div>
     );
   });
