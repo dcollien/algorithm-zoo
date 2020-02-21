@@ -1,4 +1,8 @@
+import React from "react";
 import { DrawnGraphNode } from "../../components/Graph/Graph";
+import { euclidean } from "../../algorithms/DiscreteSearch/heuristics";
+import { GraphNode, Graph } from "../../dataStructures/Graph";
+import { SearchStrategy } from "./SearchDemos";
 
 const a: DrawnGraphNode = {
   label: "A",
@@ -121,8 +125,40 @@ const graph: DrawnGraphNode[] = [a, b, c, d, e, f, g, h, i, j, k];
 
 const goals = new Set([k]);
 
+const greedyHeuristic = {
+  description: (
+    <>
+      In this case the heuristic is the current node's euclidean distance (in
+      pixels) from the goal node. This instructs the search to visit the nodes
+      in the order of the geometrically closest to K first.
+    </>
+  ),
+  func: (goal: GraphNode) => (node: GraphNode) => (euclidean(goal)(node) / 150)
+}
+
+const aStarHeuristic = {
+  description: (
+    <>
+      In this case the heuristic is the euclidean distance (in pixels) from
+      the goal, divided by 150. The edge C to E has the largest distance to edge
+      weight ratio, and the distance of this edge (of weight 1) is under 150
+      pixels. Dividing by 150 will therefore ensure that the heuristic value
+      will not dominate the edge costs. Such a heuristic is said to be
+      "admissible", resulting in the search always finding the shortest cost
+      path.
+    </>
+  ),
+  func: (goal: GraphNode) => euclidean(goal)
+}
+
 export const droneGraphCosts = {
   start: a,
   graph,
-  goals
+  goals,
+  width: 480,
+  height: 540,
+  heuristics: {
+    [SearchStrategy.A_STAR]: aStarHeuristic,
+    [SearchStrategy.BEST_FIRST]: greedyHeuristic
+  }
 };

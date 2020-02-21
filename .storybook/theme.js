@@ -1,9 +1,10 @@
 import { create } from '@storybook/theming/create';
 
+import logo from './logo.svg';
+
 export default create({
   base: 'light',
 
   brandTitle: 'Algorithm Zoo',
-  brandUrl: 'https://example.com',
-  brandImage: 'https://placehold.it/350x150',
+  brandUrl: '/',
 });

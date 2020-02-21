@@ -15,4 +15,7 @@ storiesOf("Sudoku", module).add("sample", () =>  <Sudoku values={[
   5, X, X, X, X, X, X, 7, 3,
   X, X, 2, X, 1, X, X, X, X,
   X, X, X, X, 4, X, X, X, 9
-]} />);
+]} fixedIndices={[
+  14, 16, 17, 20, 22, 30, 32, 
+  38, 42, 46, 54, 61, 62, 65, 
+  67, 76, 80]} />);

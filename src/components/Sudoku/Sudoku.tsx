@@ -9,6 +9,7 @@ interface SudokuGrid extends Array<SudokuNumber | undefined> {
 
 interface ISudoku {
   values: SudokuGrid;
+  fixedIndices: Array<number>;
 }
 
 const tableCss = css`
@@ -33,7 +34,7 @@ const cellCss = (i: number) => css`
   line-height: 42px;
   font-weight: bold;
   font-size: 18px;
-  color: black;
+  color: #555;
 `;
 
 const candidatesCss = css`
@@ -46,7 +47,12 @@ const candidatesCss = css`
   height: 20px;
   line-height: 10px;
   font-size: 10px;
-  color: #555;
+  color: #666;
+`;
+
+const fixedCss = css`
+  line-height: 60px;
+  color: black;
 `;
 
 const cellInfo = (i: number) => {
@@ -78,13 +84,18 @@ const calculateValidValues = (values: SudokuGrid, index: number) => {
   return allValues.filter(value => !usedValues.has(value));
 };
 
-export const Sudoku: React.FC<ISudoku> = ({ values }) => {
+export const Sudoku: React.FC<ISudoku> = ({ values, fixedIndices }) => {
+  const fixed = new Set(fixedIndices);
   return (
     <div className={tableCss}>
       {values.map((cell, i) => (
         <div className={cellCss(i)}>
-          <div className={candidatesCss}>{calculateValidValues(values, i).join(' ')}</div>
-          <div>{cell}</div>
+          {!fixed.has(i) && (
+            <div className={candidatesCss}>
+              {calculateValidValues(values, i).join(" ")}
+            </div>
+          )}
+          <div className={fixed.has(i) ? fixedCss : undefined}>{cell}</div>
         </div>
       ))}
     </div>
