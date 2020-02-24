@@ -25,8 +25,8 @@ interface IExampleGraph {
   height: number;
   description?: React.ReactNode;
   heuristics?: {
-    [key: string]: IExampleHeuristic
-  }
+    [key: string]: IExampleHeuristic;
+  };
 }
 
 interface IExampleHeuristic {
@@ -57,43 +57,55 @@ const DFS_DESCRIPTION = (
 );
 
 const DESCRIPTIONS = {
-  [SearchStrategy.DFS_RANDOM]: (pathDesc: React.ReactNode, graphDesc: React.ReactNode) => (
+  [SearchStrategy.DFS_RANDOM]: (
+    pathDesc: React.ReactNode,
+    graphDesc: React.ReactNode
+  ) => (
     <>
       Finding any path {pathDesc} using Depth-First Search.
       <br />
       When a node is expanded, the edges are visited in a random order.
       <br />
       {DFS_DESCRIPTION}
-      <br/>
+      <br />
       {graphDesc}
       <hr />
     </>
   ),
-  [SearchStrategy.DFS_LEFT]: (pathDesc: React.ReactNode, graphDesc: React.ReactNode) => (
+  [SearchStrategy.DFS_LEFT]: (
+    pathDesc: React.ReactNode,
+    graphDesc: React.ReactNode
+  ) => (
     <>
       Finding any path {pathDesc} using Depth-First Search.
       <br />
       When a node is expanded, the edges are visited left-to-right.
       <br />
       {DFS_DESCRIPTION}
-      <br/>
+      <br />
       {graphDesc}
       <hr />
     </>
   ),
-  [SearchStrategy.DFS_RIGHT]: (pathDesc: React.ReactNode, graphDesc: React.ReactNode) => (
+  [SearchStrategy.DFS_RIGHT]: (
+    pathDesc: React.ReactNode,
+    graphDesc: React.ReactNode
+  ) => (
     <>
       Finding any path {pathDesc} using Depth-First Search.
       <br />
       When a node is expanded, the edges are visited right-to-left.
       <br />
       {DFS_DESCRIPTION}
-      <br/>
+      <br />
       {graphDesc}
       <hr />
     </>
   ),
-  [SearchStrategy.BFS]: (pathDesc: React.ReactNode, graphDesc: React.ReactNode) => (
+  [SearchStrategy.BFS]: (
+    pathDesc: React.ReactNode,
+    graphDesc: React.ReactNode
+  ) => (
     <>
       Finding the path {pathDesc} with the fewest edges, using Breadth-First
       Search.
@@ -105,39 +117,46 @@ const DESCRIPTIONS = {
       <hr />
     </>
   ),
-  [SearchStrategy.UNIFORM_COST]: (pathDesc: React.ReactNode, graphDesc: React.ReactNode) => (
+  [SearchStrategy.UNIFORM_COST]: (
+    pathDesc: React.ReactNode,
+    graphDesc: React.ReactNode
+  ) => (
     <>
       Finding the lowest-cost path {pathDesc} using using Uniform Cost Search.
       Search.
       <br />
-      The neighbouring nodes are added to a <em>priority queue</em> where
-      they are then visited in order of the lowest cost path to the starting
-      node.
+      The neighbouring nodes are added to a <em>priority queue</em> where they
+      are then visited in order of the lowest cost path to the starting node.
       <br />
       {graphDesc}
       <hr />
     </>
   ),
-  [SearchStrategy.BEST_FIRST]: (pathDesc: React.ReactNode, graphDesc: React.ReactNode) => (
+  [SearchStrategy.BEST_FIRST]: (
+    pathDesc: React.ReactNode,
+    graphDesc: React.ReactNode
+  ) => (
     <>
       Finding any path {pathDesc} using Best-First Search (Greedy Search).
       Search.
       <br />
-      The neighbouring nodes are added to a <em>priority queue</em> where
-      they are then visited in an order determined by a heuristic.
+      The neighbouring nodes are added to a <em>priority queue</em> where they
+      are then visited in an order determined by a heuristic.
       <br />
       {graphDesc}
       <hr />
     </>
   ),
-  [SearchStrategy.A_STAR]: (pathDesc: React.ReactNode, graphDesc: React.ReactNode) => (
+  [SearchStrategy.A_STAR]: (
+    pathDesc: React.ReactNode,
+    graphDesc: React.ReactNode
+  ) => (
     <>
-      Finding the lowest-cost path {pathDesc} using using A* Search.
-      Search.
+      Finding the lowest-cost path {pathDesc} using using A* Search. Search.
       <br />
       When a node is expended, the neighbouring nodes are added to a{" "}
-      <em>priority queue</em> where they are then visited in order, ranked
-      by (lowest cost path to the starting node) + (a heuristic).
+      <em>priority queue</em> where they are then visited in order, ranked by
+      (lowest cost path to the starting node) + (a heuristic).
       <br />
       {graphDesc}
       <hr />
@@ -154,8 +173,12 @@ export const SearchDemo: React.FC<ISearchDemoProps> = ({
   examples
 }) => {
   const firstExample = Object.keys(examples)[0];
-  const [exampleGraph, setExampleGraph] = useState<IExampleGraph>(examples[firstExample]);
-  const [start, setStart] = useState<DrawnGraphNode>(examples[firstExample].start);
+  const [exampleGraph, setExampleGraph] = useState<IExampleGraph>(
+    examples[firstExample]
+  );
+  const [start, setStart] = useState<DrawnGraphNode>(
+    examples[firstExample].start
+  );
   const [goal, setGoal] = useState<DrawnGraphNode>(
     examples[firstExample].goals.values().next().value
   );
@@ -186,16 +209,25 @@ export const SearchDemo: React.FC<ISearchDemoProps> = ({
     <>
       from{" "}
       <span className={selectionCss}>
-        <select aria-label="Starting Node" value={start.label} onChange={handleStartChange}>
+        <select
+          aria-label="Starting Node"
+          value={start.label}
+          onChange={handleStartChange}
+        >
           {exampleGraph.graph.map(node => (
             <option key={node.label} value={node.label}>
               {node.label}
             </option>
           ))}
         </select>
-      </span>
-      {" "} to <span className={selectionCss}>
-        <select aria-label="Goal Node" value={goal.label} onChange={handleGoalChange}>
+      </span>{" "}
+      to{" "}
+      <span className={selectionCss}>
+        <select
+          aria-label="Goal Node"
+          value={goal.label}
+          onChange={handleGoalChange}
+        >
           {exampleGraph.graph.map(node => (
             <option key={node.label} value={node.label}>
               {node.label}
@@ -206,7 +238,21 @@ export const SearchDemo: React.FC<ISearchDemoProps> = ({
     </>
   );
 
-  const graphDesc = exampleGraph.description;
+  const heuristic: IExampleHeuristic | undefined = exampleGraph.heuristics
+    ? exampleGraph.heuristics[searchStrategy]
+    : undefined;
+  const graphDesc = (
+    <>
+      {exampleGraph.description}
+      {heuristic ? (
+        <>
+          <br />
+          {heuristic.description}
+        </>
+      ) : null}
+    </>
+  );
+  const heuristicFunc = heuristic ? heuristic.func(goal): undefined;
 
   return (
     <div>
@@ -226,6 +272,7 @@ export const SearchDemo: React.FC<ISearchDemoProps> = ({
         goals={new Set([goal])}
         width={exampleGraph.width}
         height={exampleGraph.height}
+        heuristic={heuristicFunc}
       >
         {DESCRIPTIONS[searchStrategy](pathDesc, graphDesc)}
       </GraphSearch>

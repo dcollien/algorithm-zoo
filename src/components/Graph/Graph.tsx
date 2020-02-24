@@ -94,6 +94,8 @@ const drawEdges = (
   const defaultRadius = 16;
   ctx.save();
 
+  const labels: DrawnEdge[] = [];
+
   node.edges?.map(edge => {
     const edgeStyle = edgeStyles?.get(edge);
     ctx.strokeStyle = edgeStyle?.stroke
@@ -106,6 +108,17 @@ const drawEdges = (
 
     drawArrow(ctx, node.x, node.y, edge.destination.x, edge.destination.y, node.radius || defaultRadius, edge.destination.radius || defaultRadius + 1, shift);
 
+    if (edge.label) {
+      labels.push(edge);
+    }
+  });
+  ctx.restore();
+
+  return labels;
+};
+
+const drawLabels = (ctx: CanvasRenderingContext2D, node: DrawnGraphNode, edgeLabels: DrawnEdge[]) => {
+  edgeLabels.map(edge => {
     if (edge.label) {
       const midX = (node.x + edge.destination.x) / 2;
       const midY = (node.y + edge.destination.y) / 2;
@@ -128,8 +141,6 @@ const drawEdges = (
       ctx.fillText(edge.label, midX, midY);
     }
   });
-
-  ctx.restore();
 };
 
 const drawNode = (
@@ -187,7 +198,9 @@ export const Graph: React.FC<IGraphSearchProps> = ({
     ctx.clearRect(0, 0, width, height);
 
     graph.map(node => {
-      drawEdges(ctx, node, edgeStyles);
+      return [node, drawEdges(ctx, node, edgeStyles)] as [DrawnGraphNode, DrawnEdge[]];
+    }).forEach(([node, edgeLabels]) => {
+      drawLabels(ctx, node, edgeLabels);
     });
 
     graph.map(node => {

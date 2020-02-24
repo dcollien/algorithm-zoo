@@ -240,6 +240,7 @@ export const GraphSearch: React.FC<IGraphSearchProps> = ({
   }, [canStep, isPlaying]);
 
   const onReset = () => {
+    onStop();
     setSearchGenerator(search.search(start, isGoal, heuristic));
     setSearchStep(startResult);
     setCanStep(true);
@@ -276,6 +277,7 @@ export const GraphSearch: React.FC<IGraphSearchProps> = ({
           onReset={onReset}
           canStep={canStep}
           canReset={!isPlaying}
+          isPlaying={isPlaying}
         />
       </div>
       <div>

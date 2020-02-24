@@ -130,26 +130,26 @@ const greedyHeuristic = {
     <>
       In this case the heuristic is the current node's euclidean distance (in
       pixels) from the goal node. This instructs the search to visit the nodes
-      in the order of the geometrically closest to K first.
+      in the order of the geometrically closest to the goal first.
     </>
   ),
-  func: (goal: GraphNode) => (node: GraphNode) => (euclidean(goal)(node) / 150)
-}
+  func: (goal: GraphNode) => euclidean(goal)
+};
 
 const aStarHeuristic = {
   description: (
     <>
-      In this case the heuristic is the euclidean distance (in pixels) from
-      the goal, divided by 150. The edge C to E has the largest distance to edge
+      In this case the heuristic is the euclidean distance (in pixels) from the
+      goal, divided by 150. The edge C to E has the largest distance to edge
       weight ratio, and the distance of this edge (of weight 1) is under 150
       pixels. Dividing by 150 will therefore ensure that the heuristic value
-      will not dominate the edge costs. Such a heuristic is said to be
-      "admissible", resulting in the search always finding the shortest cost
-      path.
+      will not dominate the edge costs (it is always an under-estimate). Such a
+      heuristic is said to be "admissible", resulting in the search always
+      finding the shortest cost path.
     </>
   ),
-  func: (goal: GraphNode) => euclidean(goal)
-}
+  func: (goal: GraphNode) => (node: GraphNode) => euclidean(goal)(node) / 150
+};
 
 export const droneGraphCosts = {
   start: a,

@@ -6,14 +6,16 @@ import { SearchDemo, SearchStrategy } from "./SearchDemos";
 import { droneGraph } from "./droneGraph";
 import { droneGraphCosts } from "./droneGraphCosts";
 import { binaryTree } from "./binaryTree";
+import { directedGraph } from "./directedGraph";
 
 const UNINFORMED_EXAMPLES = {
-  "Example 1: Graph Search": droneGraph,
-  "Example 2: Tree Search": binaryTree
+  "Example 1: Bidirected Graph": droneGraph,
+  "Example 2: Binary Tree": binaryTree
 };
 
 const INFORMED_EXAMPLES = {
-  "Example 1: Graph Search": droneGraphCosts
+  "Example 1: Directed Graph": droneGraphCosts,
+  "Example 2: Directed Graph": directedGraph
 };
 
 storiesOf("Graph Search", module)

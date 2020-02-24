@@ -5,7 +5,7 @@ import { Sudoku } from "./Sudoku";
 
 const X = undefined;
 
-storiesOf("Sudoku", module).add("sample", () =>  <Sudoku values={[
+storiesOf("Sudoku (Random testing)", module).add("sample", () =>  <Sudoku values={[
   X, X, X, X, X, X, X, X, X,
   X, X, X, X, X, 3, X, 8, 5,
   X, X, 1, X, 2, X, X, X, X,

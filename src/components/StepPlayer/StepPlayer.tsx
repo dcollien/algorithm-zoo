@@ -30,6 +30,7 @@ interface IStepPlayer {
   onReset: () => void;
   canStep: boolean;
   canReset: boolean;
+  isPlaying?: boolean;
 }
 
 export const StepPlayer: React.FC<IStepPlayer> = ({
@@ -38,10 +39,15 @@ export const StepPlayer: React.FC<IStepPlayer> = ({
   onStop,
   onReset,
   canStep,
-  canReset
+  canReset,
+  isPlaying
 }) => {
-  const [isPlaying, setIsPlaying] = useState(false);
+  const [_isPlaying, setIsPlaying] = useState(false);
 
+  if (isPlaying === undefined) {
+    isPlaying = _isPlaying;
+  }
+  
   const toolbar = useToolbarState({ loop: true });
 
   useEffect(() => {
