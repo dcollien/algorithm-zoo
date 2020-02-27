@@ -1,15 +1,16 @@
-import React, { useRef, useEffect, useCallback, useState } from "react";
+import React, { useRef, useEffect, useCallback, useState, HTMLAttributes } from "react";
 
 type UpdateHandler = (dt: number) => void;
 type ContextRenderer = (ctx: CanvasRenderingContext2D) => void;
 
-export interface IAnimatedCanvasProps {
+export interface IAnimatedCanvasProps extends HTMLAttributes<HTMLCanvasElement> {
   width: number;
   height: number;
   onFrame: UpdateHandler;
   render: ContextRenderer;
   isAnimating?: boolean;
-  className?: string;
+
+  ref?: React.RefObject<HTMLCanvasElement>;
 }
 
 class Runtime {
@@ -61,9 +62,10 @@ export const AnimatedCanvas: React.FC<IAnimatedCanvasProps> = ({
   onFrame,
   render,
   isAnimating = true,
-  className
+  ref,
+  ...props
 }) => {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const canvasRef = ref || useRef<HTMLCanvasElement>(null);
   const [runtime, setRuntime] = useState<Runtime>();
 
   // when the canvas changes, make a new redraw fn for the new context
@@ -91,5 +93,5 @@ export const AnimatedCanvas: React.FC<IAnimatedCanvasProps> = ({
     return () => runtime?.stop();
   }, [runtime, isAnimating]);
 
-  return <canvas className={className} width={width} height={height} ref={canvasRef}></canvas>;
+  return <canvas width={width} height={height} ref={canvasRef} {...props}></canvas>;
 };
