@@ -1,3 +1,5 @@
+import { plotRect } from "./pixelGeometry";
+
 export interface PixelColor {
   r: number;
   g: number;
@@ -35,33 +37,14 @@ export const getRect = (
   y1: number,
   x2: number,
   y2: number
-) => {
-  const rowRange = Math.abs(y2 - y1);
-  const rowStart = Math.min(y1, y2);
-  const rowEnd = rowStart + rowRange;
-  const colRange = Math.abs(x2 - x1);
-  const colStart = Math.min(x1, x2);
-  const colEnd = colStart + colRange;
-
-  const output = new Array<Pixel>();
-  for (let y = rowStart; y < rowEnd; y++) {
-    for (let x = colStart; x < colEnd; x++) {
-      const color = getPixelColor(imageData, x, y);
-      output.push({
-        color,
-        x,
-        y
-      });
-    }
-  }
-
-  return output;
-};
-
-export const isMatchingColor = (
-  colA: PixelColor,
-  colB: PixelColor
 ) =>
+  plotRect(x1, y1, x2, y2).map(({ x, y }) => ({
+    color: getPixelColor(imageData, x, y),
+    x,
+    y
+  }));
+
+export const isMatchingColor = (colA: PixelColor, colB: PixelColor) =>
   colA.r === colB.r &&
   colA.g === colB.g &&
   colA.b === colB.b &&

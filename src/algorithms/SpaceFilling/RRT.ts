@@ -1,28 +1,25 @@
-import { VectLike, v } from "../../utils/vector";
-import { M } from "../../utils/math";
+export type ExtendFunc<Q, R extends Q = Q> = (from: Q, to: R) => [Q | null, boolean];
 
-type ExtendFunc<Q> = (from: Q, to: Q) => [Q | null, boolean];
-
-export interface IRRTOptions<Q> {
+export interface IRRTOptions<Q, R extends Q = Q> {
   // Generate a random configuration
-  random: () => Q;
+  random: () => R;
 
   // Extend from a node, returning [node, isGoal]
   // A node of null indicates no connection to the destination
-  extend: ExtendFunc<Q>;
+  extend: ExtendFunc<Q, R>;
 
   // Distance from one node to another
-  distance: (from: Q, to: Q) => number;
+  distance: (from: Q, to: R) => number;
 
   // Iterations before giving up
   maxIterations: number;
 }
 
-export class RRT<Q> {
+export class RRT<Q, R extends Q = Q> {
   start: Q;
-  options: IRRTOptions<Q>;
+  options: IRRTOptions<Q, R>;
 
-  constructor(start: Q, options: IRRTOptions<Q>) {
+  constructor(start: Q, options: IRRTOptions<Q, R>) {
     this.start = start;
     this.options = options;
   }
@@ -34,7 +31,7 @@ export class RRT<Q> {
     for (let i = 0; i < this.options.maxIterations; i++) {
       const randomNode = this.options.random();
       const nearestNode = this.getNearestNode(nodes, randomNode);
-      const [newNode, isGoal] = this.options.extend(nearestNode, nearestNode);
+      const [newNode, isGoal] = this.options.extend(nearestNode, randomNode);
 
       if (newNode !== null) {
         // Add newNode to tree
@@ -55,7 +52,7 @@ export class RRT<Q> {
     return edges;
   }
 
-  getNearestNode(nodes: Q[], node: Q) {
+  getNearestNode(nodes: Q[], node: R) {
     const distances = nodes.map((treeNode: Q): [number, Q] => [
       this.options.distance(treeNode, node),
       node
@@ -70,16 +67,3 @@ export class RRT<Q> {
     return nearest[1];
   }
 }
-
-export const extendLine = (
-  imageData: ImageData,
-  goal: VectLike,
-  goalRadius: number
-): ExtendFunc<VectLike> => (from, to) => {
-  return [to, false];
-};
-
-export const euclideanDist = (from: VectLike, to: VectLike) => v.dist(from, to);
-
-export const randomPoint = (width: number, height: number) => () =>
-  v(M.randInt(width), M.randInt(height));
