@@ -1,9 +1,15 @@
-import React, { useRef, useEffect, useCallback, useState, HTMLAttributes } from "react";
+import React, {
+  useRef,
+  useEffect,
+  HTMLAttributes,
+  useMemo
+} from "react";
 
 type UpdateHandler = (dt: number) => void;
 type ContextRenderer = (ctx: CanvasRenderingContext2D) => void;
 
-export interface IAnimatedCanvasProps extends HTMLAttributes<HTMLCanvasElement> {
+export interface IAnimatedCanvasProps
+  extends HTMLAttributes<HTMLCanvasElement> {
   width: number;
   height: number;
   onFrame: UpdateHandler;
@@ -32,6 +38,7 @@ class Runtime {
     }
 
     this.isAnimating = true;
+    this.lastStep = Date.now();
     const step = () => {
       this.step();
       this.frameRequest = window.requestAnimationFrame(step);
@@ -56,7 +63,7 @@ class Runtime {
   }
 }
 
-export const AnimatedCanvas: React.FC<IAnimatedCanvasProps> = ({
+const _AnimatedCanvas: React.FC<IAnimatedCanvasProps> = ({
   width,
   height,
   onFrame,
@@ -65,23 +72,25 @@ export const AnimatedCanvas: React.FC<IAnimatedCanvasProps> = ({
   ref,
   ...props
 }) => {
-  const canvasRef = ref || useRef<HTMLCanvasElement>(null);
-  const [runtime, setRuntime] = useState<Runtime>();
+  const backupRef = useRef<HTMLCanvasElement>(null);
+  const canvasRef = ref || backupRef;
 
-  // when the canvas changes, make a new redraw fn for the new context
-  const redraw = useCallback(() => {
-    const ctx = canvasRef.current?.getContext("2d")
+  const runtime = useMemo(
+    () => {
+      const ctx = canvasRef.current?.getContext("2d");
+      return new Runtime(onFrame, () => ctx && render(ctx))
+    },
+    []
+  );
 
-    if (ctx) {
-      render(ctx);
-    }
-  }, [render]);
-
-  // when the onFrame handler or redraw fn changes, update the runtime
   useEffect(() => {
-    runtime?.stop(); // clean up the previous instance
-    setRuntime(new Runtime(onFrame, redraw));
-  }, [onFrame, redraw]);
+    const ctx = canvasRef.current?.getContext("2d");
+    runtime.redraw = () => ctx && render(ctx);
+  }, [runtime, render]);
+
+  useEffect(() => {
+    runtime.update = onFrame;
+  }, [runtime, onFrame]);
 
   // when the runtime, or isAnimating flag changes, start/stop the runtime
   useEffect(() => {
@@ -93,5 +102,9 @@ export const AnimatedCanvas: React.FC<IAnimatedCanvasProps> = ({
     return () => runtime?.stop();
   }, [runtime, isAnimating]);
 
-  return <canvas width={width} height={height} ref={canvasRef} {...props}></canvas>;
+  return (
+    <canvas width={width} height={height} ref={canvasRef} {...props}></canvas>
+  );
 };
+
+export const AnimatedCanvas = React.memo(_AnimatedCanvas);
