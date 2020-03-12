@@ -1,4 +1,4 @@
-import React, { useState, useEffect, DetailedReactHTMLElement } from "react";
+import React, { useState, useEffect } from "react";
 import mermaid from 'mermaid';
 import mermaidAPI from "mermaid/mermaidAPI";
 

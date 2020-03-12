@@ -118,7 +118,7 @@ const drawEdges = (
 };
 
 const drawLabels = (ctx: CanvasRenderingContext2D, node: DrawnGraphNode, edgeLabels: DrawnEdge[]) => {
-  edgeLabels.map(edge => {
+  edgeLabels.forEach(edge => {
     if (edge.label) {
       const midX = (node.x + edge.destination.x) / 2;
       const midY = (node.y + edge.destination.y) / 2;
@@ -203,7 +203,7 @@ export const Graph: React.FC<IGraphSearchProps> = ({
       drawLabels(ctx, node, edgeLabels);
     });
 
-    graph.map(node => {
+    graph.forEach(node => {
       drawNode(ctx, node, nodeStyles?.get(node));
     });
   };

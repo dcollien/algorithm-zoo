@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 
 import "milligram";
 
@@ -85,9 +85,10 @@ export const GraphSearch: React.FC<IGraphSearchProps> = ({
   width = 720,
   height = 240
 }) => {
-  const isGoal = (node: GraphNode) => goals.has(node);
+  const isGoal = useCallback((node: GraphNode) => goals.has(node), [goals]);
   const [isRendering, setIsRendering] = useState(true);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [speed, setSpeed] = useState(0);
   const [playInterval, setPlayInterval] = useState<number | undefined>();
   const [canStep, setCanStep] = useState(true);
   const [searchGenerator, setSearchGenerator] = useState(() =>
@@ -101,101 +102,136 @@ export const GraphSearch: React.FC<IGraphSearchProps> = ({
     () => new Map<Edge, EdgeStyle>()
   );
 
-  const isStepInFlowchart = (
-    candidateSearchStep: SearchStepResult | undefined
-  ) =>
-    candidateSearchStep &&
-    search.flowchart?.steps.has(candidateSearchStep.status);
+  const isStepInFlowchart = useCallback(
+    (candidateSearchStep: SearchStepResult | undefined) => {
+      return (
+        candidateSearchStep &&
+        search.flowchart?.steps.has(candidateSearchStep.status)
+      );
+    },
+    [search]
+  );
 
   useEffect(() => {
-    nodeStyles.clear();
-    edgeStyles.clear();
+    setEdgeStyles(edgeStyles => {
+      edgeStyles.clear();
 
-    graph.map(node => {
-      node.edges?.forEach(edge => {
-        edgeStyles.set(edge, {
+      graph.forEach(node => {
+        node.edges?.forEach(edge => {
+          edgeStyles.set(edge, {
+            stroke: "#999"
+          });
+        });
+      });
+
+      // Style the closed set
+      if (searchStep.closedSet !== undefined) {
+        searchStep.closedSet.forEach((node: GraphNode) => {
+          node.edges?.forEach(edge => {
+            edgeStyles.delete(edge);
+          });
+        });
+      }
+
+      // Style the path
+      const path = searchStep.getBestPath();
+      path.forEach((node, i) => {
+        const nextIndex = i + 1;
+        const nextNode = i < path.length ? path[nextIndex] : null;
+
+        if (nextNode) {
+          node.edges?.forEach(edge => {
+            if (edge.destination === nextNode) {
+              edgeStyles.set(edge, {
+                stroke: "#0f4"
+              });
+            }
+          });
+        }
+      });
+
+      // Style the neighbours
+      if (searchStep.neighbours !== undefined) {
+        searchStep.neighbours.forEach(edge => {
+          edgeStyles.set(edge, {
+            stroke: "red"
+          });
+        });
+      }
+
+      return edgeStyles;
+    });
+
+    setNodeStyles(nodeStyles => {
+      nodeStyles.clear();
+
+      graph.forEach(node => {
+        nodeStyles.set(node, {
+          fill: "#eee",
           stroke: "#999"
         });
       });
-      nodeStyles.set(node, {
-        fill: "#eee",
-        stroke: "#999"
-      });
-    });
 
-    // Style the closed set
-    if (searchStep.closedSet !== undefined) {
-      searchStep.closedSet.forEach((node: GraphNode) => {
-        node.edges?.forEach(edge => {
-          edgeStyles.delete(edge);
-        });
-        nodeStyles.delete(node);
-      });
-    }
-
-    // Style the open set
-    if (searchStep.openSet !== null) {
-      searchStep.openSet
-        .members()
-        .forEach((member: { value: GraphNode; rank?: number }) => {
-          nodeStyles.set(member.value, {
-            fill: "#ccf",
-            labelColor: "black"
-          });
-        });
-    }
-
-    // Style the path
-    const path = searchStep.getBestPath();
-    path.map((node, i) => {
-      const nextIndex = i + 1;
-      const nextNode = i < path.length ? path[nextIndex] : null;
-
-      if (nextNode) {
-        node.edges?.forEach(edge => {
-          if (edge.destination === nextNode) {
-            edgeStyles.set(edge, {
-              stroke: "#0f4"
-            });
-          }
+      // Style the closed set
+      if (searchStep.closedSet !== undefined) {
+        searchStep.closedSet.forEach((node: GraphNode) => {
+          nodeStyles.delete(node);
         });
       }
-    });
 
-    // Style the neighbours
-    if (searchStep.neighbours !== undefined) {
-      searchStep.neighbours.forEach(edge => {
-        edgeStyles.set(edge, {
-          stroke: "red"
+      // Style the open set
+      if (searchStep.openSet !== null) {
+        searchStep.openSet
+          .members()
+          .forEach((member: { value: GraphNode; rank?: number }) => {
+            nodeStyles.set(member.value, {
+              fill: "#ccf",
+              labelColor: "black"
+            });
+          });
+      }
+
+      // Currently Selected Node
+      if (searchStep.currentNode !== null) {
+        nodeStyles.set(searchStep.currentNode, {
+          fill: "#44f",
+          labelColor: "white"
         });
-      });
-    }
+      }
 
-    // Currently Selected Node
-    if (searchStep.currentNode !== null) {
-      nodeStyles.set(searchStep.currentNode, {
-        fill: "#44f",
-        labelColor: "white"
-      });
-    }
+      return nodeStyles;
+    });
+  }, [searchStep, graph]);
 
-    setNodeStyles(nodeStyles);
-    setEdgeStyles(edgeStyles);
-  }, [searchStep]);
+  const onStop = useCallback(() => {
+    setIsPlaying(false);
+    setPlayInterval(playInterval => {
+      window.clearInterval(playInterval);
+      return undefined;
+    });
+  }, []);
+
+  const onReset = useCallback(() => {
+    onStop();
+    setSearchGenerator(search.search(start, isGoal, heuristic));
+    setSearchStep(startResult);
+    setCanStep(true);
+    setIsRendering(true);
+  }, [search, start, isGoal, heuristic, onStop]);
 
   useEffect(() => {
     onReset();
-  }, [graph, search, start, goals]);
+  }, [graph, onReset]);
 
   useEffect(() => {
     setIsRendering(true);
-  }, [width, height])
+  }, [width, height]);
 
   const onUpdate = (dt: number) => {
     //setIsRendering(false);
   };
 
-  const onStep = () => {
+  const onStep = useCallback(() => {
     let nextSearchStep;
     let isDone = false;
     do {
@@ -213,21 +249,13 @@ export const GraphSearch: React.FC<IGraphSearchProps> = ({
     }
 
     setIsRendering(true);
-  };
+  }, [isStepInFlowchart, searchGenerator]);
 
   const onPlay = () => {
     if (canStep) {
       setIsPlaying(true);
-      const interval = window.setInterval(() => {
-        onStep();
-      }, 500);
-      setPlayInterval(interval);
+      startPlay();
     }
-  };
-
-  const onStop = () => {
-    setIsPlaying(false);
-    window.clearInterval(playInterval);
   };
 
   useEffect(() => {
@@ -237,15 +265,31 @@ export const GraphSearch: React.FC<IGraphSearchProps> = ({
     return () => {
       window.clearInterval(playInterval);
     };
-  }, [canStep, isPlaying]);
+  }, [canStep, isPlaying, onStop, playInterval]);
 
-  const onReset = () => {
-    onStop();
-    setSearchGenerator(search.search(start, isGoal, heuristic));
-    setSearchStep(startResult);
-    setCanStep(true);
-    setIsRendering(true);
+  const startPlay = useCallback(() => {
+    setPlayInterval(playInterval => {
+      if (playInterval !== undefined) {
+        window.clearInterval(playInterval);
+      }
+      return window.setInterval(
+        () => {
+          onStep();
+        },
+        speed === 0 ? 500 : 100
+      );
+    });
+  }, [onStep, speed]);
+
+  const onSpeedToggle = () => {
+    setSpeed(1 - speed);
   };
+
+  useEffect(() => {
+    if (isPlaying) {
+      startPlay();
+    }
+  }, [speed, isPlaying, startPlay]);
 
   const chart = search.flowchart?.mermaid || "";
   const styledChartSections = [chart];
@@ -275,14 +319,14 @@ export const GraphSearch: React.FC<IGraphSearchProps> = ({
           onPlay={onPlay}
           onStop={onStop}
           onReset={onReset}
+          onSpeedToggle={onSpeedToggle}
+          speed={speed}
           canStep={canStep}
           canReset={!isPlaying}
           isPlaying={isPlaying}
         />
       </div>
-      <div>
-        {children}
-      </div>
+      <div>{children}</div>
       <div className={rowCss}>
         <div className={graphContainerCss}>
           <div className={environmentArea}>

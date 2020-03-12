@@ -1,13 +1,7 @@
-import React, {
-  useState,
-  MouseEventHandler,
-  KeyboardEventHandler,
-  useCallback,
-  useReducer
-} from "react";
+import React from "react";
 import { storiesOf } from "@storybook/react";
 
-import { Floorplan, IAgent, State } from "./Floorplan";
+import { Floorplan, IAgent, IState } from "./Floorplan";
 
 import exampleFloorplan from "./exampleFloorplan.png";
 
@@ -19,7 +13,7 @@ storiesOf("Floorplan", module).add("sample", () => {
   };
 
   const renderOverlay = () => {};
-  const renderAgent = (ctx: CanvasRenderingContext2D, state: State) => {
+  const renderAgent = (ctx: CanvasRenderingContext2D, state: IState) => {
     const agent = state.getAgent();
     const lastCollision = state.getLastCollision();
 
@@ -40,15 +34,22 @@ storiesOf("Floorplan", module).add("sample", () => {
 
     ctx.lineWidth = 1;
 
-    ctx.beginPath();
-    ctx.arc(agent.radius/2, -agent.radius/2, 4, 0, 2 * Math.PI);
-    ctx.fill();
-    ctx.stroke();
+    if (state.isSteering) {
+      ctx.beginPath();
+      ctx.arc(agent.radius/2, -agent.radius/2, 4, 0, 2 * Math.PI);
+      ctx.fill();
+      ctx.stroke();
 
-    ctx.beginPath();
-    ctx.arc(agent.radius/2, agent.radius/2, 4, 0, 2 * Math.PI);
-    ctx.fill();
-    ctx.stroke();
+      ctx.beginPath();
+      ctx.arc(agent.radius/2, agent.radius/2, 4, 0, 2 * Math.PI);
+      ctx.fill();
+      ctx.stroke();
+    } else {
+      ctx.beginPath();
+      ctx.arc(0, 0, 6, 0, 2 * Math.PI);
+      ctx.fill();
+      ctx.stroke();
+    }
   };
 
   const onUpdate = (dt: number) => {};

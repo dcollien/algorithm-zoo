@@ -1,4 +1,4 @@
-import { GraphNode, Edge, Graph } from "../../dataStructures/Graph";
+import { GraphNode, Edge } from "../../dataStructures/Graph";
 import { NodeSet } from "./nodeSets";
 
 interface Path {

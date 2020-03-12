@@ -1,9 +1,9 @@
 import React from "react";
 
 import { DrawnGraphNode } from "../../components/Graph/Graph";
-import { Edge, GraphNode } from "../../dataStructures/Graph";
+import { GraphNode } from "../../dataStructures/Graph";
 import { euclidean } from "../../algorithms/DiscreteSearch/heuristics";
-import { SearchStrategy } from "./SearchDemos";
+import { SearchStrategy } from "./SearchDemo";
 import { parseGraph } from "../../components/Graph/graphParser";
 
 const graphDefinition = `

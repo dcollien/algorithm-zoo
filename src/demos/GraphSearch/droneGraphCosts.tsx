@@ -1,8 +1,8 @@
 import React from "react";
 import { DrawnGraphNode } from "../../components/Graph/Graph";
 import { euclidean } from "../../algorithms/DiscreteSearch/heuristics";
-import { GraphNode, Graph } from "../../dataStructures/Graph";
-import { SearchStrategy } from "./SearchDemos";
+import { GraphNode } from "../../dataStructures/Graph";
+import { SearchStrategy } from "./SearchDemo";
 
 const a: DrawnGraphNode = {
   label: "A",

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, Ref } from "react";
+import React, { useState, useEffect } from "react";
 
 import { css } from "emotion";
 
@@ -7,7 +7,9 @@ import {
   faPlay,
   faPause,
   faBackward,
-  faStepForward
+  faStepForward,
+  faAngleRight,
+  faAngleDoubleRight
 } from "@fortawesome/free-solid-svg-icons";
 
 import {
@@ -28,6 +30,8 @@ interface IStepPlayer {
   onPlay: () => void;
   onStop: () => void;
   onReset: () => void;
+  onSpeedToggle: () => void;
+  speed: number;
   canStep: boolean;
   canReset: boolean;
   isPlaying?: boolean;
@@ -38,6 +42,8 @@ export const StepPlayer: React.FC<IStepPlayer> = ({
   onPlay,
   onStop,
   onReset,
+  onSpeedToggle,
+  speed,
   canStep,
   canReset,
   isPlaying
@@ -70,6 +76,9 @@ export const StepPlayer: React.FC<IStepPlayer> = ({
   const resetHandler = () => {
     onReset();
   };
+  const speedToggleHandler = () => {
+    onSpeedToggle();
+  }
 
   return (
     <div>
@@ -103,6 +112,16 @@ export const StepPlayer: React.FC<IStepPlayer> = ({
               <FontAwesomeIcon icon={faPlay} /> Play
             </>
           )}
+        </ToolbarItem>
+        <ToolbarSeparator {...toolbar} />
+        <ToolbarItem
+          {...toolbar}
+          as={Button}
+          className={buttonCss}
+          onClick={speedToggleHandler}
+        >
+          {speed === 1 && <><FontAwesomeIcon icon={faAngleRight} /> Slow</> }
+          {speed === 0 && <><FontAwesomeIcon icon={faAngleDoubleRight} /> Fast</> }
         </ToolbarItem>
         <ToolbarSeparator {...toolbar} />
         <ToolbarItem

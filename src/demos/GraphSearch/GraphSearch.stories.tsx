@@ -1,7 +1,7 @@
 import React from "react";
 import { storiesOf } from "@storybook/react";
 
-import { SearchDemo, SearchStrategy } from "./SearchDemos";
+import { SearchDemo, SearchStrategy } from "./SearchDemo";
 
 import { droneGraph } from "./droneGraph";
 import { droneGraphCosts } from "./droneGraphCosts";

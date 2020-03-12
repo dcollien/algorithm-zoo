@@ -19,7 +19,7 @@ export const parseGraph = (graphDefinition: string) => {
       const info = trimmed.slice(label.length);
       if (info.startsWith("<--") || info.startsWith("--")) {
         const arrow = info.match(
-          /^(?<biDirectional>\<)?(--)?\s*(?<weight>\d+)?\s*(--)?\>\s*(?<destination>[A-Za-z]+)$/
+          /^(?<biDirectional><)?(--)?\s*(?<weight>\d+)?\s*(--)?>\s*(?<destination>[A-Za-z]+)$/
         );
         if (arrow === null) {
           throw new Error(`Parse error on line ${i + 1}. Unable to read arrow`);
@@ -65,8 +65,6 @@ export const parseGraph = (graphDefinition: string) => {
       }
     }
   });
-
-  console.log(edges);
 
   edges.forEach(([source, destination, weight, isLabelled]) => {
     const node = nodeTable[source];

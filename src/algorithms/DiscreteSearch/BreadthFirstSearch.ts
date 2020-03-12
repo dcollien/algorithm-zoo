@@ -1,6 +1,5 @@
 import { ISearch, search, Status } from "./search";
 import { QueueNodeSet } from "./nodeSets";
-import { GraphNode } from "../../dataStructures/Graph";
 
 const flowchart = {
   mermaid: `

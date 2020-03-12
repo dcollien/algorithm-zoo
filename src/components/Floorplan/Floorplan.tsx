@@ -4,12 +4,44 @@ import React, {
   HTMLAttributes,
   useReducer,
   MouseEventHandler,
-  KeyboardEventHandler
+  KeyboardEventHandler,
+  useRef
 } from "react";
+import { css } from "emotion";
 import { AnimatedCanvas } from "../AnimatedCanvas/AnimatedCanvas";
-import { v, VectLike } from '../../utils/vector';
+import { v, VectLike } from "../../utils/vector";
 import { M } from "../../utils/math";
 import { PixelColor, getRect, isMatchingColor } from "../../utils/imageData";
+
+import { Button } from "reakit/Button";
+
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import {
+  faArrowUp,
+  faArrowDown,
+  faArrowLeft,
+  faArrowRight
+} from "@fortawesome/free-solid-svg-icons";
+
+const floorplanCss = css`
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+
+  div {
+    display: flex;
+    justify-content: center;
+  }
+`;
+
+const buttonCss = css`
+  width: 48px;
+  height: 48px;
+  font-size: 20px;
+  line-height: 40px;
+  margin: 2px;
+  padding: 4px;
+`;
 
 export interface IAgent {
   position: VectLike;
@@ -18,10 +50,13 @@ export interface IAgent {
 }
 
 enum Action {
-  MOVE_AGENT = 1,
-  COMMAND_AGENT = 2,
-  COLLISION = 3,
-  CHANGE_FLOORPLAN = 4
+  DRIVE_AGENT = 1,
+  TRANSLATE_AGENT = 2,
+  COMMAND_AGENT = 3,
+  COLLISION = 4,
+  CHANGE_FLOORPLAN = 5,
+  RESET = 6,
+  CHANGE_SETTING = 7,
 }
 
 enum Command {
@@ -31,73 +66,218 @@ enum Command {
   RIGHT = "right"
 }
 
+interface ICommands {
+  [Command.FORWARD]: boolean;
+  [Command.REVERSE]: boolean;
+  [Command.LEFT]: boolean;
+  [Command.RIGHT]: boolean;
+}
+
 interface IStateRepresentation {
-  commands: {
-    [Command.FORWARD]: boolean;
-    [Command.REVERSE]: boolean;
-    [Command.LEFT]: boolean;
-    [Command.RIGHT]: boolean;
-  };
+  commands: ICommands;
   agent: IAgent;
   lastCollision: null | { x: number; y: number };
   floorplan: null | ImageData;
+  isSteering: boolean;
+  isMovementEnabled: boolean;
 }
 
-interface IMoveAgent {
-  action: Action.MOVE_AGENT;
+interface IAction {
+  action: Action;
+  [key: string]: any;
+}
+
+interface IReset extends IAction {
+  action: Action.RESET;
+  initialState: IStateRepresentation;
+}
+
+interface IDriveAgent extends IAction {
+  action: Action.DRIVE_AGENT;
   distance?: number;
   angle?: number;
 }
 
-interface ICommandAgent {
+interface ITranslateAgent extends IAction {
+  action: Action.TRANSLATE_AGENT;
+  x: number;
+  y: number;
+}
+
+interface ICommandAgent extends IAction {
   action: Action.COMMAND_AGENT;
   command: Command;
   isActive: boolean;
 }
 
-interface IAgentCollided {
+interface IAgentCollided extends IAction {
   action: Action.COLLISION;
   collision: VectLike;
 }
 
-interface IFloorplanChange {
+interface IFloorplanChange extends IAction {
   action: Action.CHANGE_FLOORPLAN;
   floorplan: ImageData;
 }
 
-type IAction = IMoveAgent | ICommandAgent | IAgentCollided | IFloorplanChange;
+interface IChangeSeting extends IAction {
+  action: Action.CHANGE_SETTING;
+  isMovementEnabled?: boolean;
+}
 
-export class State {
+export interface IState {
+  reduceAction(action: IAction): IState;
+  getAgent(): IAgent;
+  getCommands(): ICommands;
+  getFloorplan(): null | ImageData;
+  getLastCollision(): null | { x: number; y: number };
+  isSteering: boolean;
+}
+
+interface IReducers {
+  [Action.RESET]: (action: IAction) => void;
+  [Action.COMMAND_AGENT]: (action: IAction) => void;
+  [Action.DRIVE_AGENT]: (action: IAction) => void;
+  [Action.TRANSLATE_AGENT]: (action: IAction) => void;
+  [Action.COLLISION]: (action: IAction) => void;
+  [Action.CHANGE_FLOORPLAN]: (action: IAction) => void;
+  [Action.CHANGE_SETTING]: (action: IAction) => void;
+}
+
+const actionGuards = {
+  [Action.RESET]: (action: IAction): action is IReset =>
+    action.action === Action.RESET,
+  [Action.COMMAND_AGENT]: (action: IAction): action is ICommandAgent =>
+    action.action === Action.COMMAND_AGENT,
+  [Action.DRIVE_AGENT]: (action: IAction): action is IDriveAgent =>
+    action.action === Action.DRIVE_AGENT,
+  [Action.TRANSLATE_AGENT]: (action: IAction): action is ITranslateAgent =>
+    action.action === Action.TRANSLATE_AGENT,
+  [Action.COLLISION]: (action: IAction): action is IAgentCollided =>
+    action.action === Action.COLLISION,
+  [Action.CHANGE_FLOORPLAN]: (action: IAction): action is IFloorplanChange =>
+    action.action === Action.CHANGE_FLOORPLAN,
+  [Action.CHANGE_SETTING]: (action: IAction): action is IChangeSeting => action.action === Action.CHANGE_SETTING
+};
+
+const TapButton: React.FC<{
+  className?: string;
+  children?: React.ReactNode;
+  disabled?: boolean;
+  onPress: () => void;
+  onRelease: () => void;
+}> = ({ onPress, onRelease, className, children, disabled=false }) => {
+  const onKeyDown = (event: React.KeyboardEvent) => {
+    if (event.key === " " || event.key === "Enter") {
+      onPress();
+    }
+  };
+
+  const onKeyUp = (event: React.KeyboardEvent) => {
+    if (event.key === " " || event.key === "Enter") {
+      onRelease();
+    }
+  };
+
+  return (
+    <Button
+      className={className}
+      onMouseDown={onPress}
+      onMouseUp={onRelease}
+      onMouseOut={onRelease}
+      onKeyDown={onKeyDown}
+      onKeyUp={onKeyUp}
+      onBlur={onRelease}
+      onTouchStart={onPress}
+      onTouchEnd={onRelease}
+      onTouchCancel={onRelease}
+      disabled={disabled}
+    >
+      {children}
+    </Button>
+  );
+};
+
+class State implements IState {
   state: IStateRepresentation;
+  isSteering: boolean;
+  reducers: IReducers;
 
   constructor(initial: IStateRepresentation) {
     this.state = initial;
+    this.isSteering = initial.isSteering;
+
+    this.reducers = {
+      [Action.RESET]: (action: IAction) =>
+        actionGuards[Action.RESET](action) &&
+        this.resetState(action.initialState),
+      [Action.COMMAND_AGENT]: (action: IAction) => {
+        if (!actionGuards[Action.COMMAND_AGENT](action)) return;
+        if (!this.state.isMovementEnabled) return;
+        this.state.commands[action.command] = action.isActive;
+      },
+      [Action.DRIVE_AGENT]: (action: IAction) =>
+        actionGuards[Action.DRIVE_AGENT](action) && this.driveAgent(action),
+      [Action.TRANSLATE_AGENT]: (action: IAction) =>
+        actionGuards[Action.TRANSLATE_AGENT](action) &&
+        this.translateAgent(action),
+      [Action.COLLISION]: (action: IAction) => {
+        if (!actionGuards[Action.COLLISION](action)) {
+          return;
+        }
+
+        this.collide(action.collision);
+        this.state.lastCollision = {
+          x: action.collision.x,
+          y: action.collision.y
+        };
+      },
+      [Action.CHANGE_FLOORPLAN]: (action: IAction) => {
+        if (!actionGuards[Action.CHANGE_FLOORPLAN](action)) return;
+        this.state.floorplan = action.floorplan;
+      },
+      [Action.CHANGE_SETTING]: (action: IAction) => {
+        if (!actionGuards[Action.CHANGE_SETTING](action)) return;
+        if (action.isMovementEnabled !== undefined) {
+          this.state.isMovementEnabled = action.isMovementEnabled;
+        }
+      }
+    };
+  }
+
+  resetState(initial: IStateRepresentation) {
+    this.state = initial;
+    this.isSteering = initial.isSteering;
+  }
+
+  updateCollision() {
+    const agent = this.getAgent();
+    if (
+      this.state.lastCollision &&
+      v.dist(this.state.lastCollision, agent.position) > agent.radius
+    ) {
+      this.state.lastCollision = null;
+    }
+  }
+
+  driveAgent(action: IDriveAgent) {
+    if (action.angle) {
+      this.turn(action.angle);
+    }
+    if (action.distance) {
+      this.moveForward(action.distance);
+      this.updateCollision();
+    }
+  }
+
+  translateAgent(action: ITranslateAgent) {
+    const agent = this.getAgent();
+    agent.position = v.add(agent.position, action);
+    this.updateCollision();
   }
 
   reduceAction(action: IAction) {
-    if (action.action === Action.COMMAND_AGENT) {
-      this.state.commands[action.command] = action.isActive;
-    } else if (action.action === Action.MOVE_AGENT) {
-      if (action.angle) {
-        this.turn(action.angle);
-      }
-      if (action.distance) {
-        this.moveForward(action.distance);
-        const agent = this.getAgent();
-        if (this.state.lastCollision && v.dist(this.state.lastCollision, agent.position) > agent.radius) {
-          this.state.lastCollision = null;
-        }
-      }
-    } else if (action.action === Action.COLLISION) {
-      this.collide(action.collision);
-      this.state.lastCollision = {
-        x: action.collision.x,
-        y: action.collision.y
-      };
-    } else if (action.action === Action.CHANGE_FLOORPLAN) {
-      console.log("CHANGE FLOORPLAN", action.floorplan);
-      this.state.floorplan = action.floorplan;
-    }
+    this.reducers[action.action](action);
     return this;
   }
 
@@ -133,7 +313,6 @@ export class State {
     const offset = v.sub(agent.position, position);
     const overshoot = agent.radius - offset.len();
     if (overshoot > 0) {
-      console.log(overshoot);
       const correction = v.scale(offset, Math.ceil(overshoot * 100) / 100);
       agent.position = v.add(agent.position, correction);
     }
@@ -186,16 +365,22 @@ const detectCollision = (
   position: VectLike,
   radius: number
 ) => {
-  const [x1, x2] = M.clamp([position.x - radius, position.x + radius], floorplan.width).map(Math.floor);
-  const [y1, y2] = M.clamp([position.y - radius, position.y + radius], floorplan.height).map(Math.floor);
+  const [x1, x2] = M.clamp(
+    [position.x - radius, position.x + radius],
+    floorplan.width
+  ).map(Math.floor);
+  const [y1, y2] = M.clamp(
+    [position.y - radius, position.y + radius],
+    floorplan.height
+  ).map(Math.floor);
 
   const rect = getRect(floorplan, x1, y1, x2, y2);
 
   const collisionPixel = rect.find(
     pixel =>
-    isMatchingColor(pixel.color, color) && v.dist(pixel, position) < radius
+      isMatchingColor(pixel.color, color) && v.dist(pixel, position) < radius
   );
-  
+
   if (collisionPixel) {
     return v(collisionPixel.x, collisionPixel.y);
   } else {
@@ -205,14 +390,15 @@ const detectCollision = (
 
 const handleStateUpdate = (
   dt: number,
-  state: State,
-  dispatch: React.Dispatch<IAction>
+  state: IState,
+  dispatch: React.Dispatch<IAction>,
+  onAgentMove: (agent:IAgent) => void
 ) => {
   const { forward, reverse, left, right } = state.getCommands();
   const floorplan = state.getFloorplan();
+  const agent = state.getAgent();
 
   if (floorplan) {
-    const agent = state.getAgent();
 
     const hitCoord = detectCollision(
       floorplan,
@@ -230,6 +416,7 @@ const handleStateUpdate = (
         action: Action.COLLISION,
         collision: hitCoord
       });
+      
       return;
     }
   }
@@ -237,32 +424,77 @@ const handleStateUpdate = (
   const thrust = dt * 40;
   const torque = dt * 2;
 
+  let didMove = false;
+
   if (left && !right) {
-    dispatch({
-      action: Action.MOVE_AGENT,
-      angle: -torque
-    });
+    if (state.isSteering) {
+      dispatch({
+        action: Action.DRIVE_AGENT,
+        angle: -torque
+      });
+    } else {
+      dispatch({
+        action: Action.TRANSLATE_AGENT,
+        x: -thrust,
+        y: 0
+      });
+    }
+    didMove = true;
   } else if (right && !left) {
-    dispatch({
-      action: Action.MOVE_AGENT,
-      angle: torque
-    });
+    if (state.isSteering) {
+      dispatch({
+        action: Action.DRIVE_AGENT,
+        angle: torque
+      });
+    } else {
+      dispatch({
+        action: Action.TRANSLATE_AGENT,
+        x: thrust,
+        y: 0
+      });
+    }
+    didMove = true;
   }
 
   if (forward && !reverse) {
-    dispatch({
-      action: Action.MOVE_AGENT,
-      distance: thrust
-    });
+    if (state.isSteering) {
+      dispatch({
+        action: Action.DRIVE_AGENT,
+        distance: thrust
+      });
+    } else {
+      dispatch({
+        action: Action.TRANSLATE_AGENT,
+        y: -thrust,
+        x: 0
+      });
+    }
+    didMove = true;
   } else if (reverse && !forward) {
-    dispatch({
-      action: Action.MOVE_AGENT,
-      distance: -thrust
-    });
+    if (state.isSteering) {
+      dispatch({
+        action: Action.DRIVE_AGENT,
+        distance: -thrust
+      });
+    } else {
+      dispatch({
+        action: Action.TRANSLATE_AGENT,
+        y: thrust,
+        x: 0
+      });
+    }
+    didMove = true;
+  }
+
+  if (didMove) {
+    onAgentMove(agent);
   }
 };
 
-const getInitialState: (agent: IAgent) => IStateRepresentation = agent => ({
+const getInitialState: (
+  agent: IAgent,
+  isSteering: boolean
+) => IStateRepresentation = (agent, isSteering) => ({
   commands: {
     forward: false,
     reverse: false,
@@ -271,14 +503,16 @@ const getInitialState: (agent: IAgent) => IStateRepresentation = agent => ({
   },
   agent,
   lastCollision: null,
-  floorplan: null
+  floorplan: null,
+  isMovementEnabled: true,
+  isSteering
 });
 
 const initializer = (initialState: IStateRepresentation) => {
   return new State(initialState);
 };
 
-const reducer = (state: State, action: IAction) => {
+const reducer = (state: IState, action: IAction) => {
   return state.reduceAction(action);
 };
 
@@ -287,11 +521,15 @@ export type ChangeFloorplanFunc = (floorplan: ImageData) => void;
 
 interface IFloorplanProps extends HTMLAttributes<HTMLCanvasElement> {
   imageUrl: string;
-  renderOverlay: (ctx: CanvasRenderingContext2D, state: State) => void;
-  renderAgent: (ctx: CanvasRenderingContext2D, state: State) => void;
+  renderOverlay: (ctx: CanvasRenderingContext2D, state: IState) => void;
+  renderAgent: (ctx: CanvasRenderingContext2D, state: IState) => void;
   agent: IAgent;
   onUpdate: UpdateFunc;
+  onSelectPosition?: (position: {x: number, y: number}) => void;
+  onAgentMove?: (agent: IAgent) => void;
+  isSteering?: boolean;
   onFloorplanChange?: ChangeFloorplanFunc;
+  isMovementEnabled?: boolean;
 }
 
 export const Floorplan: React.FC<IFloorplanProps> = ({
@@ -300,9 +538,14 @@ export const Floorplan: React.FC<IFloorplanProps> = ({
   renderAgent,
   onUpdate,
   agent,
+  onAgentMove = (agent: IAgent) => {},
+  isSteering = false,
   onFloorplanChange,
+  isMovementEnabled,
+  onSelectPosition,
   ...props
 }) => {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
   const [image, setImage] = useState<HTMLImageElement | null>(null);
   const [isImageUpdateRequired, setIsImageUpdateRequired] = useState<boolean>(
     true
@@ -323,7 +566,7 @@ export const Floorplan: React.FC<IFloorplanProps> = ({
   const [isFocussed, setIsFocussed] = useState<boolean>(true);
   const [state, dispatch] = useReducer(
     reducer,
-    getInitialState(agent),
+    getInitialState(agent, isSteering),
     initializer
   );
 
@@ -336,6 +579,21 @@ export const Floorplan: React.FC<IFloorplanProps> = ({
   };
 
   useEffect(() => {
+    dispatch({
+      action: Action.RESET,
+      initialState: getInitialState(agent, isSteering)
+    });
+    setIsImageUpdateRequired(true);
+  }, [agent, isSteering]);
+
+  useEffect(() => {
+    dispatch({
+      action: Action.CHANGE_SETTING,
+      isMovementEnabled: isMovementEnabled
+    })
+  }, [isMovementEnabled]);
+
+  useEffect(() => {
     window.addEventListener("focus", onFocus);
     window.addEventListener("blur", onBlur);
     return () => {
@@ -345,23 +603,47 @@ export const Floorplan: React.FC<IFloorplanProps> = ({
   });
 
   const handleUpdate = (dt: number) => {
-    handleStateUpdate(dt, state, dispatch);
+    handleStateUpdate(dt, state, dispatch, onAgentMove);
     onUpdate(dt);
   };
 
   const onClick: MouseEventHandler<HTMLCanvasElement> = event => {
+    const rect = canvasRef.current?.getBoundingClientRect();
+
+    if (rect) {
+      onSelectPosition && onSelectPosition({
+        x: event.clientX - rect.left,
+        y: event.clientY - rect.top
+      });
+    }
     props.onClick && props.onClick(event);
   };
 
   const onKeyDown: KeyboardEventHandler<HTMLCanvasElement> = event => {
     event.stopPropagation();
-    handleKeyBindings(event, dispatch);
     props.onKeyDown && props.onKeyDown(event);
+    handleKeyBindings(event, dispatch);
   };
 
   const onKeyUp: KeyboardEventHandler<HTMLCanvasElement> = event => {
-    handleKeyBindings(event, dispatch);
     props.onKeyUp && props.onKeyUp(event);
+    handleKeyBindings(event, dispatch);
+  };
+
+  const onButtonDown = (command: Command) => () => {
+    dispatch({
+      action: Action.COMMAND_AGENT,
+      isActive: true,
+      command
+    });
+  };
+
+  const onButtonUp = (command: Command) => () => {
+    dispatch({
+      action: Action.COMMAND_AGENT,
+      isActive: false,
+      command
+    });
   };
 
   const render = (ctx: CanvasRenderingContext2D) => {
@@ -404,16 +686,55 @@ export const Floorplan: React.FC<IFloorplanProps> = ({
   };
 
   return (
-    <AnimatedCanvas
-      width={width}
-      height={height}
-      onFrame={handleUpdate}
-      isAnimating={isFocussed}
-      render={render}
-      onClick={onClick}
-      onKeyDown={onKeyDown}
-      onKeyUp={onKeyUp}
-      {...props}
-    />
+    <div className={floorplanCss}>
+      <div>
+        <AnimatedCanvas
+          ref={canvasRef}
+          width={width}
+          height={height}
+          onFrame={handleUpdate}
+          isAnimating={isFocussed}
+          render={render}
+          onClick={onClick}
+          onKeyDown={onKeyDown}
+          onKeyUp={onKeyUp}
+          {...props}
+        />
+      </div>
+      <div>
+        <TapButton
+          className={buttonCss}
+          onPress={onButtonDown(Command.FORWARD)}
+          onRelease={onButtonUp(Command.FORWARD)}
+          disabled={!isMovementEnabled}
+        >
+          <FontAwesomeIcon icon={faArrowUp} />
+        </TapButton>
+        <TapButton
+          className={buttonCss}
+          onPress={onButtonDown(Command.REVERSE)}
+          onRelease={onButtonUp(Command.REVERSE)}
+          disabled={!isMovementEnabled}
+        >
+          <FontAwesomeIcon icon={faArrowDown} />
+        </TapButton>
+        <TapButton
+          className={buttonCss}
+          onPress={onButtonDown(Command.LEFT)}
+          onRelease={onButtonUp(Command.LEFT)}
+          disabled={!isMovementEnabled}
+        >
+          <FontAwesomeIcon icon={faArrowLeft} />
+        </TapButton>
+        <TapButton
+          className={buttonCss}
+          onPress={onButtonDown(Command.RIGHT)}
+          onRelease={onButtonUp(Command.RIGHT)}
+          disabled={!isMovementEnabled}
+        >
+          <FontAwesomeIcon icon={faArrowRight} />
+        </TapButton>
+      </div>
+    </div>
   );
 };

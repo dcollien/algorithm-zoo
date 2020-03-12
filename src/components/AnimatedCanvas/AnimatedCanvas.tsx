@@ -2,7 +2,8 @@ import React, {
   useRef,
   useEffect,
   HTMLAttributes,
-  useMemo
+  useMemo,
+  useImperativeHandle
 } from "react";
 
 type UpdateHandler = (dt: number) => void;
@@ -20,15 +21,13 @@ export interface IAnimatedCanvasProps
 }
 
 class Runtime {
-  update: UpdateHandler;
-  redraw: () => void;
+  update?: UpdateHandler;
+  redraw?: () => void;
   isAnimating: boolean;
   frameRequest?: number;
   lastStep?: number;
 
-  constructor(update: UpdateHandler, redraw: () => void) {
-    this.update = update;
-    this.redraw = redraw;
+  constructor() {
     this.isAnimating = false;
   }
 
@@ -58,28 +57,24 @@ class Runtime {
     const now = Date.now();
     const dt = (now - this.lastStep!) / 1000;
     this.lastStep = now;
-    this.update(dt);
-    this.redraw();
+    this.update && this.update(dt);
+    this.redraw && this.redraw();
   }
 }
 
-const _AnimatedCanvas: React.FC<IAnimatedCanvasProps> = ({
+const _AnimatedCanvas = React.forwardRef<HTMLCanvasElement, IAnimatedCanvasProps>(({
   width,
   height,
   onFrame,
   render,
   isAnimating = true,
-  ref,
   ...props
-}) => {
-  const backupRef = useRef<HTMLCanvasElement>(null);
-  const canvasRef = ref || backupRef;
+}, ref) => {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  useImperativeHandle(ref, () => canvasRef.current as HTMLCanvasElement);
 
   const runtime = useMemo(
-    () => {
-      const ctx = canvasRef.current?.getContext("2d");
-      return new Runtime(onFrame, () => ctx && render(ctx))
-    },
+    () => new Runtime(),
     []
   );
 
@@ -105,6 +100,6 @@ const _AnimatedCanvas: React.FC<IAnimatedCanvasProps> = ({
   return (
     <canvas width={width} height={height} ref={canvasRef} {...props}></canvas>
   );
-};
+});
 
 export const AnimatedCanvas = React.memo(_AnimatedCanvas);

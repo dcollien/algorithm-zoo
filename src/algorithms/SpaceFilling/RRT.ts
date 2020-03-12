@@ -1,10 +1,11 @@
-export type ExtendFunc<Q, R extends Q = Q> = (from: Q, to: R) => [Q | null, boolean];
+export type ExtendFunc<Q, R> = (from: Q, to: R) => [Q | null, boolean];
 
-export interface IRRTOptions<Q, R extends Q = Q> {
+export interface IRRTOptions<Q, R> {
   // Generate a random configuration
   random: () => R;
 
-  // Extend from a node, returning [node, isGoal]
+  // Extend from a node toward a configuration,
+  // returning [node, isGoal]
   // A node of null indicates no connection to the destination
   extend: ExtendFunc<Q, R>;
 
@@ -15,25 +16,110 @@ export interface IRRTOptions<Q, R extends Q = Q> {
   maxIterations: number;
 }
 
-export class RRT<Q, R extends Q = Q> {
-  start: Q;
-  options: IRRTOptions<Q, R>;
+export enum Status {
+  Start = "start",
+  IterationCheck = "iterationCheck",
+  RandomConfig = "randomConfig",
+  NearestNeighbour = "nearestNeighbour",
+  Extend = "extend",
+  CanConnect = "canConnect",
+  AddToTree = "addToTree",
+  GoalCheck = "goalCheck"
+}
 
-  constructor(start: Q, options: IRRTOptions<Q, R>) {
-    this.start = start;
+export interface IStepResult<Q, R> {
+  status: Status;
+  nodes: Q[];
+  edges: Map<Q, Q[]>;
+  i: number;
+  isPassed?: boolean;
+  randomNode?: R;
+  nearestNode?: Q;
+  newNode?: Q | null;
+}
+
+export type PlanGenerator<Q, R> = Generator<IStepResult<Q, R>, [Q[], Map<Q, Q[]>]>
+
+export class RRT<Q, R> {
+  options: IRRTOptions<Q, R>;
+  generator?: PlanGenerator<Q, R>;
+
+  constructor(options: IRRTOptions<Q, R>) {
     this.options = options;
   }
 
-  generatePlan() {
-    const nodes = [this.start];
+  generatePlan(start: Q): PlanGenerator<Q, R> {
+    this.generator = this.buildGenerator(start);
+    return this.generator;
+  }
+
+  *buildGenerator(start: Q): PlanGenerator<Q, R> {
+    const nodes = [start];
     const edges = new Map<Q, Q[]>();
 
-    for (let i = 0; i < this.options.maxIterations; i++) {
+    let i = 0;
+
+    yield {
+      status: Status.Start,
+      nodes,
+      edges,
+      i
+    };
+
+    while (i <= this.options.maxIterations) {
+      yield {
+        status: Status.IterationCheck,
+        nodes,
+        edges,
+        isPassed: true,
+        i
+      };
+
       const randomNode = this.options.random();
+
+      yield {
+        status: Status.RandomConfig,
+        nodes,
+        edges,
+        randomNode,
+        i
+      };
+
       const nearestNode = this.getNearestNode(nodes, randomNode);
+
+      yield {
+        status: Status.NearestNeighbour,
+        nodes,
+        edges,
+        randomNode,
+        nearestNode,
+        i
+      }
+
       const [newNode, isGoal] = this.options.extend(nearestNode, randomNode);
 
+      yield {
+        status: Status.Extend,
+        nodes,
+        edges,
+        randomNode,
+        nearestNode,
+        newNode,
+        i
+      };
+
       if (newNode !== null) {
+        yield {
+          status: Status.CanConnect,
+          nodes,
+          edges,
+          randomNode,
+          nearestNode,
+          newNode,
+          isPassed: true,
+          i
+        };
+
         // Add newNode to tree
         nodes.push(newNode);
 
@@ -42,20 +128,70 @@ export class RRT<Q, R extends Q = Q> {
         const newNodeEdges = nodeEdges || [];
         newNodeEdges.push(newNode);
         edges.set(nearestNode, newNodeEdges);
+
+        yield {
+          status: Status.AddToTree,
+          nodes,
+          edges,
+          randomNode,
+          nearestNode,
+          newNode,
+          i
+        };
+      } else {
+        yield {
+          status: Status.CanConnect,
+          nodes,
+          edges,
+          randomNode,
+          nearestNode,
+          isPassed: false,
+          i
+        };
       }
 
       if (isGoal) {
+        yield {
+          status: Status.GoalCheck,
+          nodes,
+          edges,
+          newNode,
+          isPassed: true,
+          i
+        };
         break;
+      } else {
+        yield {
+          status: Status.GoalCheck,
+          nodes,
+          edges,
+          newNode,
+          isPassed: false,
+          i
+        };
       }
+
+      i++;
     }
 
-    return edges;
+    if (i > this.options.maxIterations) {
+      yield {
+        status: Status.IterationCheck,
+        nodes,
+        edges,
+        isPassed: false,
+        i
+      };
+    }
+
+    const result: [Q[], Map<Q, Q[]>] = [nodes, edges];
+    return result;
   }
 
-  getNearestNode(nodes: Q[], node: R) {
+  getNearestNode(nodes: Q[], config: R) {
     const distances = nodes.map((treeNode: Q): [number, Q] => [
-      this.options.distance(treeNode, node),
-      node
+      this.options.distance(treeNode, config),
+      treeNode
     ]);
 
     let nearest = distances[0];

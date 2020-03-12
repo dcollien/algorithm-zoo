@@ -11,6 +11,11 @@ export function plotLine(
 ): Point[] {
   const plot = new Array();
 
+  x1 = Math.floor(x1);
+  x2 = Math.floor(x2);
+  y1 = Math.floor(y1);
+  y2 = Math.floor(y2);
+
   var dx = Math.abs(x2 - x1);
   var dy = Math.abs(y2 - y1);
   var sx = x1 < x2 ? 1 : -1;
