@@ -24,7 +24,8 @@ export enum Status {
   Extend = "extend",
   CanConnect = "canConnect",
   AddToTree = "addToTree",
-  GoalCheck = "goalCheck"
+  GoalCheck = "goalCheck",
+  Increment = "increment"
 }
 
 export interface IStepResult<Q, R> {
@@ -172,6 +173,12 @@ export class RRT<Q, R> {
       }
 
       i++;
+      yield {
+        status: Status.Increment,
+        nodes,
+        edges,
+        i
+      };
     }
 
     if (i > this.options.maxIterations) {

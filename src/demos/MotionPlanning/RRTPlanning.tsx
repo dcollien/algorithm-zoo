@@ -474,6 +474,13 @@ export const RRTPlanning: React.FC<IRRTPlanningProps> = ({
     }
   }, [speed, isPlaying, startPlay]);
 
+  const decision =
+    planStep?.isPassed !== undefined
+      ? planStep?.isPassed
+        ? "Yes"
+        : "No"
+      : undefined;
+
   return (
     <>
       <div className={toolbarCss}>
@@ -509,7 +516,9 @@ export const RRTPlanning: React.FC<IRRTPlanningProps> = ({
           </div>
         </div>
         <div>
-          <Mermaid id="flowchart">{flowchart}</Mermaid>
+          <Mermaid id="flowchart">
+            {speed === 1 ? flowchart() : flowchart(planStep?.status, decision)}
+          </Mermaid>
         </div>
       </div>
     </>

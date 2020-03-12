@@ -43,7 +43,8 @@ export const MotionPlanningDemo: React.FC<IMotionPlanningDemoProps> = ({
         <hr />
       </div>
       <RRTPlanning example={examplePlanner}>
-        Test
+        <p>Drive the agent around the environment using the arrow buttons, or by selecting the environment and using the keys 'W', 'A', 'S', 'D'.</p>
+        <p>Click on the environment to place a goal location, then run the RRT algorithm. You will need to reset the algorithm before changing the goal or agent position.</p>
       </RRTPlanning>
     </div>
   );
