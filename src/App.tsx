@@ -1,26 +1,48 @@
-import React from 'react';
-import logo from './logo.svg';
-import './App.css';
+import React from "react";
+import loadable from "@loadable/component";
 
-const App = () => {
+interface IAppProps {
+  [key: string]: string;
+}
+
+interface IDemos {
+  [key: string]: React.ComponentType<{ demo: string }> | undefined;
+}
+
+const searchDemo = loadable(() => import("./demos/GraphSearch/AllSearchDemos"));
+
+const demos: IDemos = {
+  "dfs-random": searchDemo,
+  "dfs-left": searchDemo,
+  "dfs-right": searchDemo,
+  bfs: searchDemo,
+  "best-first-search": searchDemo,
+  "uniform-cost-search": searchDemo,
+  "a-star-search": searchDemo,
+  rrt: loadable(() => import("./demos/MotionPlanning/RRTDemo"))
+};
+
+const Fallback: React.FC<{ demo: string }> = () => (
+  <>
+    {Object.keys(demos).map(key => (
+      <div>
+        <a href={`?demo=${key}`} key={key}>
+          {key}
+        </a>
+      </div>
+    ))}
+  </>
+);
+
+const App: React.FC<IAppProps> = ({ demo }) => {
+  const DemoComponent: React.ComponentType<{ demo: string }> =
+    demos[demo] || Fallback;
+
   return (
     <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.tsx</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
+      <DemoComponent demo={demo} />
     </div>
   );
-}
+};
 
 export default App;

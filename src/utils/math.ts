@@ -19,5 +19,9 @@ export const M = {
     return x * x * x;
   },
   clamp: (values: number[], max: number, min = 0) =>
-    values.map(value => Math.min(max, Math.max(min, value)))
+    values.map(value => Math.min(max, Math.max(min, value))),
+  sum: (...args: number[]) => args.reduce((acc: number, val: number) => acc + val, 0),
+  product: (...args: number[]) => args.reduce((acc: number, val: number) => acc * val, 1),
+  fmodr: (x: number, y: number) => x - y * Math.floor(x / y),
+  modCircle: (theta: number) => M.fmodr(theta, M.TAU)
 };

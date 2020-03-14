@@ -58,6 +58,31 @@ export function plotRect(x1: number, y1: number, x2: number, y2: number) {
   return plot;
 }
 
+export const plotCircleGen = function*(x1: number, y1: number, radius: number) {
+  let x = radius;
+  let y = 0;
+  let radiusError = 1 - x;
+
+  while (x >= y) {
+    yield({ x: x + x1, y: y + y1 });
+    yield({ x: y + x1, y: x + y1 });
+    yield({ x: -x + x1, y: y + y1 });
+    yield({ x: -y + x1, y: x + y1 });
+    yield({ x: -x + x1, y: -y + y1 });
+    yield({ x: -y + x1, y: -x + y1 });
+    yield({ x: x + x1, y: -y + y1 });
+    yield({ x: y + x1, y: -x + y1 });
+    y++;
+
+    if (radiusError < 0) {
+      radiusError += 2 * y + 1;
+    } else {
+      x--;
+      radiusError += 2 * (y - x + 1);
+    }
+  }
+}
+
 export function plotCircle(x1: number, y1: number, radius: number) {
   let x = radius;
   let y = 0;

@@ -456,6 +456,7 @@ const handleStateUpdate = (
     didMove = true;
   }
 
+  // TODO: normalise translation
   if (forward && !reverse) {
     if (state.isSteering) {
       dispatch({

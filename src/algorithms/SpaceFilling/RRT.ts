@@ -1,4 +1,4 @@
-export type ExtendFunc<Q, R> = (from: Q, to: R) => [Q | null, boolean];
+export type ExtendFunc<Q, R> = (from: Q, to: R) => [Q | null, boolean, Q[] | undefined];
 
 export interface IRRTOptions<Q, R> {
   // Generate a random configuration
@@ -28,10 +28,15 @@ export enum Status {
   Increment = "increment"
 }
 
+export interface Edge<Q> {
+  destination: Q;
+  samples?: Q[];
+}
+
 export interface IStepResult<Q, R> {
   status: Status;
   nodes: Q[];
-  edges: Map<Q, Q[]>;
+  edges: Map<Q, Edge<Q>[]>;
   i: number;
   isPassed?: boolean;
   randomNode?: R;
@@ -39,7 +44,10 @@ export interface IStepResult<Q, R> {
   newNode?: Q | null;
 }
 
-export type PlanGenerator<Q, R> = Generator<IStepResult<Q, R>, [Q[], Map<Q, Q[]>]>
+export type PlanGenerator<Q, R> = Generator<
+  IStepResult<Q, R>,
+  [Q[], Map<Q, Edge<Q>[]>]
+>;
 
 export class RRT<Q, R> {
   options: IRRTOptions<Q, R>;
@@ -56,7 +64,7 @@ export class RRT<Q, R> {
 
   *buildGenerator(start: Q): PlanGenerator<Q, R> {
     const nodes = [start];
-    const edges = new Map<Q, Q[]>();
+    const edges = new Map<Q, Edge<Q>[]>();
 
     let i = 0;
 
@@ -95,9 +103,9 @@ export class RRT<Q, R> {
         randomNode,
         nearestNode,
         i
-      }
+      };
 
-      const [newNode, isGoal] = this.options.extend(nearestNode, randomNode);
+      const [newNode, isGoal, samples] = this.options.extend(nearestNode, randomNode);
 
       yield {
         status: Status.Extend,
@@ -127,7 +135,10 @@ export class RRT<Q, R> {
         // Add edge to tree
         const nodeEdges = edges.get(nearestNode);
         const newNodeEdges = nodeEdges || [];
-        newNodeEdges.push(newNode);
+        newNodeEdges.push({
+          destination: newNode,
+          samples
+        });
         edges.set(nearestNode, newNodeEdges);
 
         yield {
@@ -191,7 +202,7 @@ export class RRT<Q, R> {
       };
     }
 
-    const result: [Q[], Map<Q, Q[]>] = [nodes, edges];
+    const result: [Q[], Map<Q, Edge<Q>[]>] = [nodes, edges];
     return result;
   }
 

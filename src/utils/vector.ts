@@ -26,7 +26,7 @@ export class Vect {
   }
 }
 
-export type VectLike = Vect | { x: number; y: number };
+export type VectLike = { x: number; y: number };
 
 const isPoint = (val: any): val is { x: number; y: number } => {
   return typeof val === "object" && val.x !== undefined && val.y !== undefined;
