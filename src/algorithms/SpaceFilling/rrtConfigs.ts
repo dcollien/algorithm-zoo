@@ -3,7 +3,7 @@ import { M } from "../../utils/math";
 import { IRRTOptions, ExtendFunc } from "./RRT";
 import { plotLine, plotCircle } from "../../utils/pixelGeometry";
 import { getPixelColor } from "../../utils/imageData";
-import { dubinsShortestPath, plotDubinsPathGen, dubinsPathLength } from "../../utils/dubins";
+import { dubinsShortestPath, plotDubinsPathGen, dubinsPathLength, dubinsPathSample } from "../../utils/dubins";
 
 export interface RrtNode {
   x: number;
@@ -18,9 +18,7 @@ type IsEmptyFunc = (color: {
   a?: number;
 }) => boolean;
 
-const minDist = 2;
-
-const testCollision = (imageData: ImageData, isEmpty: IsEmptyFunc, config: RrtNode | VectLike, radius: number) => {
+const testCollisionCircle = (imageData: ImageData, isEmpty: IsEmptyFunc, config: RrtNode | VectLike, radius: number) => {
   const circlePixels = plotCircle(Math.floor(config.x), Math.floor(config.y), radius);
   return circlePixels.some(point => {
     const color = getPixelColor(imageData, point.x, point.y);
@@ -38,30 +36,31 @@ const extendLine = (
   const linePixels = plotLine(from.x, from.y, to.x, to.y);
 
   let destination = linePixels[0];
+  let canConnect = true;
+  let stopPixel = null;
 
   for (let i = 0; i < linePixels.length; i++) {
     const pixel = linePixels[i];
     if (v.dist(from, pixel) > maxDistance) {
       break;
     }
-
-    if (testCollision(imageData, isEmpty, pixel, radius)) {
+    if (testCollisionCircle(imageData, isEmpty, pixel, radius)) {
+      canConnect = false;
       break;
     }
-
-    destination = pixel;
+    stopPixel = pixel;
   }
 
-  const newNode =
-    v.dist(destination, from) > minDist
-      ? {
-          x: destination.x,
-          y: destination.y,
-          angle: v.sub(from, to).angle()
-        }
-      : null;
+  const newNode = canConnect && stopPixel ? {
+    x: stopPixel.x,
+    y: stopPixel.y,
+    angle: from.angle
+  } : undefined;
 
-  return [newNode, v.dist(destination, goal) < radius, undefined];
+  return {
+    newNode,
+    isGoal: v.dist2(destination, goal) < radius * radius
+  };
 };
 
 const euclideanDist = (from: VectLike, to: VectLike) => v.dist(from, to);
@@ -111,23 +110,37 @@ const extendDubinsPath = (
   turnRadius: number
 ): ExtendFunc<RrtNode, RrtNode> => (from, to) => {
   const path = dubinsShortestPath(from, to, turnRadius);
-  const pathSamplesGenerator = plotDubinsPathGen(path, 1);
+  const pathLength = dubinsPathLength(path);
+  const stepSize = 1;
   const pathSamples = []
+  const sqMaxDist = maxDistance * maxDistance;
   
-  let lastSample: RrtNode | null = null;
-  for (const sample of pathSamplesGenerator) {
-    if (v.dist(from, sample) > maxDistance) {
+  let t = 0;
+  let canConnect = true;
+  let sample: RrtNode | undefined;
+  while (t < pathLength) {
+    sample = dubinsPathSample(path, t);
+    if (v.dist2(from, sample) > sqMaxDist) {
       break;
     }
-    if (testCollision(imageData, isEmpty, sample, radius)) {
+    if (testCollisionCircle(imageData, isEmpty, sample, radius)) {
+      canConnect = false;
       break;
     }
 
-    lastSample = sample;
-    pathSamples.push(lastSample);
+    pathSamples.push(sample);
+    t += stepSize;
   }
 
-  return [lastSample, lastSample !== null && v.dist(lastSample, goal) < radius, pathSamples];
+  if (!canConnect) {
+    sample = undefined;
+  }
+
+  return {
+    isGoal: Boolean(canConnect && sample && v.dist2(sample, goal) < radius * radius),
+    samples: pathSamples,
+    newNode: sample
+  }
 };
 
 const dubinsLength = (turnRadius: number) => (from: RrtNode, to: RrtNode) => {

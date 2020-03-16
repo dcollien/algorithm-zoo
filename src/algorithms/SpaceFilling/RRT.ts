@@ -1,4 +1,8 @@
-export type ExtendFunc<Q, R> = (from: Q, to: R) => [Q | null, boolean, Q[] | undefined];
+export type ExtendFunc<Q, R> = (from: Q, to: R) => {
+  newNode?: Q,
+  isGoal: boolean,
+  samples?: Q[]
+};
 
 export interface IRRTOptions<Q, R> {
   // Generate a random configuration
@@ -105,7 +109,11 @@ export class RRT<Q, R> {
         i
       };
 
-      const [newNode, isGoal, samples] = this.options.extend(nearestNode, randomNode);
+      const {
+        isGoal,
+        newNode,
+        samples
+      } = this.options.extend(nearestNode, randomNode);
 
       yield {
         status: Status.Extend,
@@ -117,7 +125,7 @@ export class RRT<Q, R> {
         i
       };
 
-      if (newNode !== null) {
+      if (newNode) {
         yield {
           status: Status.CanConnect,
           nodes,
@@ -150,6 +158,26 @@ export class RRT<Q, R> {
           newNode,
           i
         };
+        if (isGoal) {
+          yield {
+            status: Status.GoalCheck,
+            nodes,
+            edges,
+            newNode,
+            isPassed: true,
+            i
+          };
+          break;
+        } else {
+          yield {
+            status: Status.GoalCheck,
+            nodes,
+            edges,
+            newNode,
+            isPassed: false,
+            i
+          };
+        }
       } else {
         yield {
           status: Status.CanConnect,
@@ -157,27 +185,6 @@ export class RRT<Q, R> {
           edges,
           randomNode,
           nearestNode,
-          isPassed: false,
-          i
-        };
-      }
-
-      if (isGoal) {
-        yield {
-          status: Status.GoalCheck,
-          nodes,
-          edges,
-          newNode,
-          isPassed: true,
-          i
-        };
-        break;
-      } else {
-        yield {
-          status: Status.GoalCheck,
-          nodes,
-          edges,
-          newNode,
           isPassed: false,
           i
         };
