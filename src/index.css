@@ -1,0 +1,26 @@
+.button:focus,
+.button:hover,
+button:focus,
+button:hover,
+input[type="button"]:focus,
+input[type="button"]:hover,
+input[type="reset"]:focus,
+input[type="reset"]:hover,
+input[type="submit"]:focus,
+input[type="submit"]:hover {
+  background-color: #77359c;
+  border-color: #77359c;
+  color: #fff;
+  outline: 0;
+}
+
+.button[disabled],
+button[disabled],
+input[type="button"][disabled],
+input[type="reset"][disabled],
+input[type="submit"][disabled] {
+  background-color: #606c76;
+  border-color: #606c76;
+  color: #fff;
+  outline: 0;
+}

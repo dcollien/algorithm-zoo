@@ -91,6 +91,16 @@ export const StepPlayer: React.FC<IStepPlayer> = ({
           {...toolbar}
           as={Button}
           className={buttonCss}
+          onClick={resetHandler}
+          disabled={!canReset}
+        >
+          <FontAwesomeIcon icon={faBackward} /> Reset
+        </ToolbarItem>
+        <ToolbarSeparator {...toolbar} />
+        <ToolbarItem
+          {...toolbar}
+          as={Button}
+          className={buttonCss}
           onClick={stepHandler}
           disabled={!canStep || isPlaying}
         >
@@ -122,16 +132,6 @@ export const StepPlayer: React.FC<IStepPlayer> = ({
         >
           {speed === 1 && <><FontAwesomeIcon icon={faAngleRight} /> Slow</> }
           {speed === 0 && <><FontAwesomeIcon icon={faAngleDoubleRight} /> Fast</> }
-        </ToolbarItem>
-        <ToolbarSeparator {...toolbar} />
-        <ToolbarItem
-          {...toolbar}
-          as={Button}
-          className={buttonCss}
-          onClick={resetHandler}
-          disabled={!canReset}
-        >
-          <FontAwesomeIcon icon={faBackward} /> Reset
         </ToolbarItem>
       </Toolbar>
     </div>

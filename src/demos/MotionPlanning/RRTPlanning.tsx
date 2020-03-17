@@ -2,8 +2,6 @@ import React, { useState, useEffect, useCallback } from "react";
 
 import { css } from "emotion";
 
-import "milligram";
-
 import {
   IAgent,
   IState,
@@ -60,13 +58,17 @@ const containerCss = css`
   display: inline-block;
 `;
 
+const iterationCss = css`
+  text-align: center;
+`;
+
 interface IRRTPlanningProps {
   example: IExampleMotionPlan;
   children?: React.ReactNode;
   maxExplorationDistance: number;
+  maxIterations: number;
 }
 
-const maxIterations = 1000;
 const isEmpty = (color: PixelColor) =>
   color.r !== 0 || color.g !== 0 || color.b !== 0;
 const nodeRadius = 4;
@@ -294,6 +296,7 @@ const findPath = (nodes: RrtNode[], edges: Map<RrtNode, RRTEdge<RrtNode>[]>) => 
 export const RRTPlanning: React.FC<IRRTPlanningProps> = ({
   example,
   maxExplorationDistance,
+  maxIterations,
   children
 }) => {
   const [speed, setSpeed] = useState(0);
@@ -457,6 +460,10 @@ export const RRTPlanning: React.FC<IRRTPlanningProps> = ({
     setPath(null);
   }, [onStop]);
 
+  useEffect(() => {
+    onReset();
+  }, [example]);
+
   const handleClick = (position: { x: number; y: number }) => {
     if (!rrtPlanner?.generator) {
       setGoal({
@@ -559,6 +566,7 @@ export const RRTPlanning: React.FC<IRRTPlanningProps> = ({
       <div className={rowCss}>
         <div className={containerCss}>
           <div className={environmentArea}>
+            <div className={iterationCss}>{planStep ? <>Iteration: {planStep.i} / {maxIterations}</> : null}</div>
             <Floorplan
               imageUrl={example.floorplanUrl}
               renderOverlay={renderOverlay}

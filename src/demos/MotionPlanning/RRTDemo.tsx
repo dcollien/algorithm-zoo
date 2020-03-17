@@ -32,6 +32,13 @@ const EXAMPLES: IMotionPlanningExamples = {
     floorplanUrl: exampleFloorplan,
     initialAgent,
     turnRadius: 40
+  },
+  "Vacuum Cleaner - Goal bias 10%": {
+    isSteering: true,
+    floorplanUrl: exampleFloorplan,
+    initialAgent,
+    turnRadius: 40,
+    goalBias: 0.1
   }
 };
 
