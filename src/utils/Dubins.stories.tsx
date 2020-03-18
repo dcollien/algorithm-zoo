@@ -23,10 +23,6 @@ storiesOf("Dubins Curve - testing", module).add("sample", () => {
   const path = dubinsShortestPath(start, end, turnRadius);
   const pathLength = dubinsPathLength(path);
 
-
-  console.log('PATH', path);
-  console.log('SAMPLE', dubinsPathSample(path, 1.0));
-
   const render = (ctx: CanvasRenderingContext2D) => {
     //return;
     ctx.strokeStyle = "black";
