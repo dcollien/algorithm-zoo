@@ -44,7 +44,6 @@ export enum Status {
   GoalFound = "success",
   Fail = "fail",
 
-
   // RRT* States
   FindNeighbourhood = "findNeighbourhood",
   FindLowestCostNeighbour = "findLowestCostNeighbour",
@@ -70,10 +69,7 @@ export interface IStepResult<Q> {
   lowestCostNode?: Q;
 }
 
-export type PlanGenerator<Q> = Generator<
-  IStepResult<Q>,
-  IStepResult<Q>
->;
+export type PlanGenerator<Q> = Generator<IStepResult<Q>, IStepResult<Q>>;
 
 export class RRT<Q> {
   options: IRRTOptions<Q>;
@@ -234,7 +230,10 @@ export class RRT<Q> {
     }
 
     return {
-      nodes, edges, status, i
+      nodes,
+      edges,
+      status,
+      i
     };
   }
 
@@ -432,7 +431,11 @@ export class RRTStar<Q> extends RRT<Q> {
             }
             return lowest;
           },
-          neighbourhoodCosts[0]
+          [
+            costs.get(nearestNode)! +
+              this.options.distance(nearestNode, newNode),
+            nearestNode
+          ]
         );
 
         const [cost, lowestCostNode] = lowestCostNeighbour;
@@ -550,7 +553,10 @@ export class RRTStar<Q> extends RRT<Q> {
     }
 
     return {
-      nodes, edges, status, i
+      nodes,
+      edges,
+      status,
+      i
     };
   }
 }

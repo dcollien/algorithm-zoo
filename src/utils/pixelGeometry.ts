@@ -9,7 +9,7 @@ export function plotLine(
   x2: number,
   y2: number
 ): Point[] {
-  const plot = new Array();
+  const plot = [];
 
   x1 = Math.floor(x1);
   x2 = Math.floor(x2);

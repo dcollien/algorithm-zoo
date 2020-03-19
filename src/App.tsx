@@ -19,7 +19,8 @@ const demos: IDemos = {
   "best-first-search": searchDemo,
   "uniform-cost-search": searchDemo,
   "a-star-search": searchDemo,
-  rrt: loadable(() => import("./demos/MotionPlanning/RRTDemo"))
+  rrt: loadable(() => import("./demos/MotionPlanning/RRTDemo")),
+  "rrt-star": loadable(() => import("./demos/MotionPlanning/RRTStarDemo")),
 };
 
 const Fallback: React.FC<{ demo: string }> = () => (

@@ -4,7 +4,6 @@ import { ExtendFunc, IRRTStarOptions } from "./RRT";
 import { plotLine, plotCircle } from "../../utils/pixelGeometry";
 import { getPixelColor } from "../../utils/imageData";
 import { dubinsShortestPath, dubinsPathLength, dubinsPathSample } from "../../utils/dubins";
-import { GOAL } from "../../utils/maze";
 
 export interface RotationalAgentState {
   x: number;
@@ -45,7 +44,7 @@ const extendLine = (
   radius: number,
   isEmpty: IsEmptyFunc,
   maxDistance: number
-): ExtendFunc<VectLike> => (from, to) => {
+): ExtendFunc<RotationalAgentState> => (from, to) => {
   const linePixels = plotLine(from.x, from.y, to.x, to.y);
 
   let destination = linePixels[0];
@@ -66,7 +65,8 @@ const extendLine = (
 
   const newNode = canConnect && stopPixel ? {
     x: stopPixel.x,
-    y: stopPixel.y
+    y: stopPixel.y,
+    angle: 0
   } : undefined;
 
   return {
@@ -93,7 +93,7 @@ const goalBiasRandomConfig = (
     angle: Math.random() * M.TAU
   };
 
-export const holonomic2dConfig = (params: IAlgorithmParameters): IRRTStarOptions<VectLike> => ({
+export const holonomic2dConfig = (params: IAlgorithmParameters): IRRTStarOptions<RotationalAgentState> => ({
   random: goalBiasRandomConfig(
     params.floorplanImage.width,
     params.floorplanImage.height,

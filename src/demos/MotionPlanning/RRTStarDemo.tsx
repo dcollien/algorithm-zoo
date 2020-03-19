@@ -47,8 +47,8 @@ const EXAMPLES: IMotionPlanningExamples = {
   }
 };
 
-const RRTDemo: React.FC<{ demo: string }> = () => (
+const RRTStarDemo: React.FC<{ demo: string }> = () => (
   <MotionPlanningDemo examples={EXAMPLES} />
 );
 
-export default RRTDemo;
+export default RRTStarDemo;

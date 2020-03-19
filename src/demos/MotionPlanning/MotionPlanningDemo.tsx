@@ -71,7 +71,7 @@ export const MotionPlanningDemo: React.FC<IMotionPlanningDemoProps> = ({
         example={examplePlanner}
         maxExplorationDistance={maxExplorationDistance}
         maxIterations={maxIterations}
-        algorithm={examplePlanner.algorithm}
+        neighbourhoodRadius={2 * maxExplorationDistance}
       >
         <div className={inputGridCss}>
           <div>Maximum exploration distance per iteration:</div>
