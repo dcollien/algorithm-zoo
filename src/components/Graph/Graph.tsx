@@ -1,6 +1,7 @@
 import React from "react";
 import { AnimatedCanvas } from "../AnimatedCanvas/AnimatedCanvas";
 import { Edge, GraphNode } from "../../dataStructures/Graph";
+import { drawArrow } from "../../utils/drawing";
 
 export interface DrawnEdge extends Edge {
   width?: number;
@@ -41,51 +42,6 @@ export interface IGraphSearchProps {
   className?: string;
 }
 
-const drawArrow = (ctx: CanvasRenderingContext2D, startX: number, startY: number, endX: number, endY: number, startOffset: number, endOffset: number, leftShift: number) => {
-  const angle = Math.atan2(endY - startY, endX - startX);
-
-  const shiftX = -Math.sin(angle) * leftShift;
-  const shiftY = Math.cos(angle) * leftShift;
-
-  const startOffsetX = Math.cos(angle) * startOffset;
-  const startOffsetY = Math.sin(angle) * startOffset;
-
-  const endOffsetX = Math.cos(angle) * endOffset;
-  const endOffsetY = Math.sin(angle) * endOffset;
-
-  const lineStartX = startX + startOffsetX + shiftX;
-  const lineStartY = startY + startOffsetY + shiftY;
-  const lineEndX = endX - endOffsetX + shiftX;
-  const lineEndY = endY - endOffsetY + shiftY;
-
-  ctx.save();
-
-  ctx.lineCap = "round";
-
-  ctx.beginPath();
-  ctx.moveTo(lineStartX, lineStartY);
-  ctx.lineTo(lineEndX, lineEndY);
-  ctx.stroke();
-
-  ctx.save();
-  ctx.translate(lineEndX, lineEndY);
-  ctx.rotate(angle);
-
-  ctx.beginPath();
-  ctx.moveTo(0, 0);
-  ctx.lineTo(-4, -4);
-  ctx.stroke();
-
-  ctx.beginPath();
-  ctx.moveTo(0, 0);
-  ctx.lineTo(-4, 4);
-  ctx.stroke();
-
-  ctx.restore();
-
-  ctx.restore();
-};
-
 const drawEdges = (
   ctx: CanvasRenderingContext2D,
   node: DrawnGraphNode,
@@ -106,7 +62,7 @@ const drawEdges = (
     const isBidirectional = edge.destination.edges?.some(edge => edge.destination === node);
     const shift = isBidirectional ? 4 : 0;
 
-    drawArrow(ctx, node.x, node.y, edge.destination.x, edge.destination.y, node.radius || defaultRadius, edge.destination.radius || defaultRadius + 1, shift);
+    drawArrow(ctx, 4, node.x, node.y, edge.destination.x, edge.destination.y, node.radius || defaultRadius, edge.destination.radius || defaultRadius + 1, shift);
 
     if (edge.label) {
       labels.push(edge);

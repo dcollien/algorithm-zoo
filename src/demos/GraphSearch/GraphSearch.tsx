@@ -1,7 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
 
-import "milligram";
-
 import {
   Graph,
   DrawnGraph,

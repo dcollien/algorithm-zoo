@@ -19,6 +19,7 @@ export interface IExampleMotionPlan {
   initialAgent: IAgent;
   goalBias?: number;
   turnRadius?: number;
+  algorithm: "RRT" | "RRT*";
 }
 
 export interface IMotionPlanningExamples {
@@ -70,6 +71,7 @@ export const MotionPlanningDemo: React.FC<IMotionPlanningDemoProps> = ({
         example={examplePlanner}
         maxExplorationDistance={maxExplorationDistance}
         maxIterations={maxIterations}
+        algorithm={examplePlanner.algorithm}
       >
         <div className={inputGridCss}>
           <div>Maximum exploration distance per iteration:</div>
@@ -96,9 +98,9 @@ export const MotionPlanningDemo: React.FC<IMotionPlanningDemoProps> = ({
           selecting the environment and using the keys 'W', 'A', 'S', 'D'.
         </p>
         <p>
-          Click on the environment to place a goal location, then run the RRT
-          algorithm. You will need to reset the algorithm before changing the
-          goal or agent position.
+          Click on the environment to place a goal location (and drag to change
+          direction), then run the {examplePlanner.algorithm} algorithm. You will need to reset the
+          algorithm before changing the goal or agent position.
         </p>
       </RRTPlanning>
     </div>

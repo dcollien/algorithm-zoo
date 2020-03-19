@@ -56,7 +56,7 @@ enum Action {
   COLLISION = 4,
   CHANGE_FLOORPLAN = 5,
   RESET = 6,
-  CHANGE_SETTING = 7,
+  CHANGE_SETTING = 7
 }
 
 enum Command {
@@ -157,7 +157,8 @@ const actionGuards = {
     action.action === Action.COLLISION,
   [Action.CHANGE_FLOORPLAN]: (action: IAction): action is IFloorplanChange =>
     action.action === Action.CHANGE_FLOORPLAN,
-  [Action.CHANGE_SETTING]: (action: IAction): action is IChangeSeting => action.action === Action.CHANGE_SETTING
+  [Action.CHANGE_SETTING]: (action: IAction): action is IChangeSeting =>
+    action.action === Action.CHANGE_SETTING
 };
 
 const TapButton: React.FC<{
@@ -166,7 +167,7 @@ const TapButton: React.FC<{
   disabled?: boolean;
   onPress: () => void;
   onRelease: () => void;
-}> = ({ onPress, onRelease, className, children, disabled=false }) => {
+}> = ({ onPress, onRelease, className, children, disabled = false }) => {
   const onKeyDown = (event: React.KeyboardEvent) => {
     if (event.key === " " || event.key === "Enter") {
       onPress();
@@ -392,14 +393,13 @@ const handleStateUpdate = (
   dt: number,
   state: IState,
   dispatch: React.Dispatch<IAction>,
-  onAgentMove: (agent:IAgent) => void
+  onAgentMove: (agent: IAgent) => void
 ) => {
   const { forward, reverse, left, right } = state.getCommands();
   const floorplan = state.getFloorplan();
   const agent = state.getAgent();
 
   if (floorplan) {
-
     const hitCoord = detectCollision(
       floorplan,
       {
@@ -416,7 +416,7 @@ const handleStateUpdate = (
         action: Action.COLLISION,
         collision: hitCoord
       });
-      
+
       return;
     }
   }
@@ -520,13 +520,25 @@ const reducer = (state: IState, action: IAction) => {
 export type UpdateFunc = (dt: number) => void;
 export type ChangeFloorplanFunc = (floorplan: ImageData) => void;
 
-interface IFloorplanProps extends HTMLAttributes<HTMLCanvasElement> {
+interface IFloorplanProps extends HTMLAttributes<Element> {
   imageUrl: string;
   renderOverlay: (ctx: CanvasRenderingContext2D, state: IState) => void;
   renderAgent: (ctx: CanvasRenderingContext2D, state: IState) => void;
   agent: IAgent;
   onUpdate: UpdateFunc;
-  onSelectPosition?: (position: {x: number, y: number}) => void;
+  onSelectPosition?: (position: { x: number; y: number }) => void;
+  onDragPosition?: (drag: {
+    x1: number;
+    y1: number;
+    x2: number;
+    y2: number;
+  }) => void;
+  onReleasePosition?: (drag: {
+    x1: number;
+    y1: number;
+    x2: number;
+    y2: number;
+  }) => void;
   onAgentMove?: (agent: IAgent) => void;
   isSteering?: boolean;
   onFloorplanChange?: ChangeFloorplanFunc;
@@ -544,6 +556,8 @@ export const Floorplan: React.FC<IFloorplanProps> = ({
   onFloorplanChange,
   isMovementEnabled,
   onSelectPosition,
+  onDragPosition,
+  onReleasePosition,
   ...props
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -565,6 +579,9 @@ export const Floorplan: React.FC<IFloorplanProps> = ({
   const height = image?.height || 0;
 
   const [isFocussed, setIsFocussed] = useState<boolean>(true);
+  const [dragStart, setDragStart] = useState<{ x: number; y: number } | null>(
+    null
+  );
   const [state, dispatch] = useReducer(
     reducer,
     getInitialState(agent, isSteering),
@@ -591,7 +608,7 @@ export const Floorplan: React.FC<IFloorplanProps> = ({
     dispatch({
       action: Action.CHANGE_SETTING,
       isMovementEnabled: isMovementEnabled
-    })
+    });
   }, [isMovementEnabled]);
 
   useEffect(() => {
@@ -608,25 +625,63 @@ export const Floorplan: React.FC<IFloorplanProps> = ({
     onUpdate(dt);
   };
 
-  const onClick: MouseEventHandler<HTMLCanvasElement> = event => {
+  const onMouseDown: MouseEventHandler<HTMLCanvasElement> = event => {
     const rect = canvasRef.current?.getBoundingClientRect();
 
     if (rect) {
-      onSelectPosition && onSelectPosition({
+      const position = {
         x: event.clientX - rect.left,
         y: event.clientY - rect.top
-      });
+      };
+      onSelectPosition && onSelectPosition(position);
+      setDragStart(position);
     }
     props.onClick && props.onClick(event);
   };
 
-  const onKeyDown: KeyboardEventHandler<HTMLCanvasElement> = event => {
+  const onMouseMove: MouseEventHandler<HTMLCanvasElement> = event => {
+    if (!dragStart) return;
+
+    const rect = canvasRef.current?.getBoundingClientRect();
+
+    if (rect) {
+      onDragPosition &&
+        onDragPosition({
+          x1: dragStart.x,
+          y1: dragStart.y,
+          x2: event.clientX - rect.left,
+          y2: event.clientY - rect.top
+        });
+    }
+    props.onClick && props.onClick(event);
+  };
+
+  const onMouseUp: MouseEventHandler<HTMLCanvasElement> = event => {
+    if (!dragStart) return;
+
+    const rect = canvasRef.current?.getBoundingClientRect();
+
+    if (rect) {
+      onReleasePosition &&
+        onReleasePosition({
+          x1: dragStart.x,
+          y1: dragStart.y,
+          x2: event.clientX - rect.left,
+          y2: event.clientY - rect.top
+        });
+    }
+
+    setDragStart(null);
+    props.onClick && props.onClick(event);
+  };
+
+  const onKeyDown: KeyboardEventHandler<HTMLDivElement> = event => {
     event.stopPropagation();
     props.onKeyDown && props.onKeyDown(event);
     handleKeyBindings(event, dispatch);
   };
 
-  const onKeyUp: KeyboardEventHandler<HTMLCanvasElement> = event => {
+  const onKeyUp: KeyboardEventHandler<HTMLDivElement> = event => {
     props.onKeyUp && props.onKeyUp(event);
     handleKeyBindings(event, dispatch);
   };
@@ -687,7 +742,7 @@ export const Floorplan: React.FC<IFloorplanProps> = ({
   };
 
   return (
-    <div className={floorplanCss}>
+    <div className={floorplanCss} onKeyDown={onKeyDown} onKeyUp={onKeyUp}>
       <div>
         <AnimatedCanvas
           ref={canvasRef}
@@ -696,9 +751,9 @@ export const Floorplan: React.FC<IFloorplanProps> = ({
           onFrame={handleUpdate}
           isAnimating={isFocussed}
           render={render}
-          onClick={onClick}
-          onKeyDown={onKeyDown}
-          onKeyUp={onKeyUp}
+          onMouseDown={onMouseDown}
+          onMouseUp={onMouseUp}
+          onMouseMove={onMouseMove}
           {...props}
         />
       </div>

@@ -9,6 +9,14 @@ export const M = {
   randInt: function(amt: number) {
     return Math.floor(M.rand(amt));
   },
+  randRange: function(min: number, max: number) {
+    return Math.random() * (max - min) + min;
+  },
+  randIntRange: function(min: number, max: number) {
+    min = Math.ceil(min);
+    max = Math.floor(max);
+    return Math.floor(M.randRange(min, max));
+  },
   lerp: function(t: number, from: number, to: number) {
     return t * to + (1 - t) * from;
   },

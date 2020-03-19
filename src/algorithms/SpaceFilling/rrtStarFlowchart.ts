@@ -8,8 +8,8 @@ const decisions: {[key: string]: {[key: string] : number}} = {
     "No": 8
   },
   "goalCheck": {
-    "Yes": 10,
-    "No": 11
+    "Yes": 13,
+    "No": 14
   }
 };
 
@@ -17,13 +17,16 @@ export const flowchart = (status?: string, decision?: string) => `
 graph TD;
 
 init("Start");
-start["Add 'start' position to the 'tree'.<br/>Set 'iteration' to 0."];
+start["Add 'start' position to the 'tree'<br/>with cost = 0.<br/>Set 'iteration' to 0."];
 iterationCheck{{"Is the 'iteration' count <br/>less than or equal to <br/>the 'maximum iterations'?"}};
 randomConfig["Select a 'configuration' at random."];
 nearestNeighbour["Find the 'nearest node' in the 'tree'<br/> to the chosen 'configuration'."];
 extend["Model (simulate) the motion of the agent<br/>extending from the 'nearest node'<br/>towards the chosen 'configuration'<br/>until either a collision,<br/>or the 'maximum distance' is reached.<br/>Place a 'new node' here."];
 canConnect{{"Was the motion to the 'new node'<br/> free from collisions?"}};
-addToTree["Add to the 'tree' the 'edge'<br/>from the 'nearest node'<br/>to the 'new node'."];
+findNeighbourhood["Find all 'neighbourhood nodes' (and their costs)<br/>that are reachable within a given distance<br/>of the 'new node'"];
+findLowestCostNeighbour["Find the 'lowest cost node',<br/> out of the 'neighbourhood nodes',<br/>which has the lowest overall travel cost.<br/>(path cost to the<br/>'neighbourhood node' + additional travel cost<br/>to the 'new node')"]
+addToTree["Add to the 'tree' the 'edge'<br/>from the 'lowest cost node'<br/>to the 'new node'."];
+rewire["Re-wire all the 'neighbourhood nodes'<br/>which can now take a lower cost path<br/>via the 'new node'."]
 goalCheck{{"Is the 'new node' within<br/>reach of the 'goal'?"}};
 increment["Increment the 'iteration' count."];
 success("Use a tree search to<br/>find the shortest path<br/>from 'start' to the node<br/>closest to the 'goal'");
@@ -36,9 +39,12 @@ iterationCheck-- No -->fail;
 randomConfig-->nearestNeighbour;
 nearestNeighbour-->extend;
 extend-->canConnect;
-canConnect-- Yes -->addToTree;
+canConnect-- Yes -->findNeighbourhood;
 canConnect-- No -->increment;
-addToTree-->goalCheck;
+findNeighbourhood-->findLowestCostNeighbour;
+findLowestCostNeighbour-->addToTree;
+addToTree-->rewire;
+rewire-->goalCheck;
 goalCheck-- Yes -->success;
 goalCheck-- No -->increment;
 increment-->iterationCheck;

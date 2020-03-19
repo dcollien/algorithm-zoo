@@ -12,12 +12,15 @@ import {
   RRT,
   IRRTOptions,
   IStepResult,
-  Edge as RRTEdge
+  Edge as RRTEdge,
+  IRRTStarOptions,
+  Status
 } from "../../algorithms/SpaceFilling/RRT";
 import {
   holonomic2dConfig,
-  RrtNode,
-  dubins2dConfig
+  RotationalAgentState,
+  dubins2dConfig,
+  IAlgorithmParameters
 } from "../../algorithms/SpaceFilling/rrtConfigs";
 import { VectLike, v } from "../../utils/vector";
 import { PixelColor } from "../../utils/imageData";
@@ -27,9 +30,11 @@ import { AStarSearch } from "../../algorithms/DiscreteSearch/AStarSearch";
 import { GraphNode, Edge } from "../../dataStructures/Graph";
 import { euclidean } from "../../algorithms/DiscreteSearch/heuristics";
 import { SearchStepResult } from "../../algorithms/DiscreteSearch/search";
-import { flowchart } from "../../algorithms/SpaceFilling/rrtFlowchart";
+import { flowchart as RrtFlowchart } from "../../algorithms/SpaceFilling/rrtFlowchart";
+import { flowchart as RrtStarFlowchart} from "../../algorithms/SpaceFilling/rrtStarFlowchart";
 import { Mermaid } from "../../components/Mermaid/Mermaid";
 import { dubinsShortestPath, plotDubinsPathGen } from "../../utils/dubins";
+import { drawArrow } from "../../utils/drawing";
 
 const toolbarCss = css`
   ${toolbarContainer}
@@ -67,13 +72,23 @@ interface IRRTPlanningProps {
   children?: React.ReactNode;
   maxExplorationDistance: number;
   maxIterations: number;
+  algorithm: "RRT" | "RRT*";
 }
+
+const isRotational = (
+  configuration: any
+): configuration is RotationalAgentState => {
+  return configuration.angle !== undefined;
+};
 
 const isEmpty = (color: PixelColor) =>
   color.r !== 0 || color.g !== 0 || color.b !== 0;
 const nodeRadius = 4;
 
-const renderPath = (ctx: CanvasRenderingContext2D, path: PathNode[]) => {
+const renderPath = <Q extends { x: number; y: number }>(
+  ctx: CanvasRenderingContext2D,
+  path: PathNode<Q>[]
+) => {
   ctx.save();
 
   ctx.lineWidth = 2;
@@ -99,8 +114,9 @@ const renderPath = (ctx: CanvasRenderingContext2D, path: PathNode[]) => {
 
 const renderStep = (
   ctx: CanvasRenderingContext2D,
-  planStep: IStepResult<RrtNode, RrtNode> | null,
-  goal: VectLike | null,
+  planStep: IStepResult<RotationalAgentState> | IStepResult<VectLike> | null,
+  goal: RotationalAgentState | null,
+  agentRadius: number,
   turnRadius?: number
 ) => {
   ctx.save();
@@ -117,8 +133,16 @@ const renderStep = (
         ctx.strokeStyle = "#ff0000";
 
         ctx.beginPath();
-        if (turnRadius !== undefined) {
-          const path = dubinsShortestPath(planStep.nearestNode, planStep.randomNode, turnRadius);
+        if (
+          turnRadius !== undefined &&
+          isRotational(planStep.nearestNode) &&
+          isRotational(planStep.randomNode)
+        ) {
+          const path = dubinsShortestPath(
+            planStep.nearestNode,
+            planStep.randomNode,
+            turnRadius
+          );
           const pathSamples = plotDubinsPathGen(path, 1);
 
           ctx.moveTo(planStep.nearestNode.x, planStep.nearestNode.y);
@@ -134,7 +158,7 @@ const renderStep = (
       }
 
       nodes.forEach(node => {
-        const edges = planStep.edges.get(node);
+        const edges = planStep.edges.get(node as any);
 
         if (edges) {
           edges.forEach(edge => {
@@ -202,7 +226,7 @@ const renderStep = (
     }
   }
 
-  if (goal) {
+  if (goal && turnRadius === undefined) {
     ctx.strokeStyle = "#ff0000";
     ctx.lineWidth = 2;
     ctx.beginPath();
@@ -214,20 +238,52 @@ const renderStep = (
     ctx.moveTo(goal.x - nodeRadius, goal.y + nodeRadius);
     ctx.lineTo(goal.x + nodeRadius, goal.y - nodeRadius);
     ctx.stroke();
+  } else if (goal) {
+    ctx.strokeStyle = "#ff0000";
+    ctx.fillStyle = "#ff0000";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(
+      goal.x,
+      goal.y,
+      nodeRadius,
+      0,
+      2 * Math.PI
+    );
+    ctx.fill();
+    const goalEnd = v.add(v(goal), v.forAngle(goal.angle, nodeRadius * 3));
+    drawArrow(ctx, 4, goal.x, goal.y, goalEnd.x, goalEnd.y);
+  }
+
+  if (goal) {
+    ctx.strokeStyle = "#ff0000";
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.arc(
+      goal.x,
+      goal.y,
+      agentRadius,
+      0,
+      2 * Math.PI
+    );
+    ctx.stroke();
   }
 
   ctx.restore();
 };
 
-interface PathNode {
-  x: number,
-  y: number,
-  samples?: RrtNode[]
-};
+interface PathNode<Q> {
+  x: number;
+  y: number;
+  samples?: Q[];
+}
 
-const findPath = (nodes: RrtNode[], edges: Map<RrtNode, RRTEdge<RrtNode>[]>) => {
-  const nodeLookup = new Map<RrtNode, GraphNode>();
-  const edgeLookup = new Map<Edge, RRTEdge<RrtNode>>();
+const findPath = <Q extends { x: number; y: number }>(
+  nodes: Q[],
+  edges: Map<Q, RRTEdge<Q>[]>
+) => {
+  const nodeLookup = new Map<Q, GraphNode>();
+  const edgeLookup = new Map<Edge, RRTEdge<Q>>();
   const graph: GraphNode[] = nodes.map(node => {
     const graphNode = {
       x: node.x,
@@ -243,18 +299,17 @@ const findPath = (nodes: RrtNode[], edges: Map<RrtNode, RRTEdge<RrtNode>[]>) => 
 
     if (graphNode && connectedNodes) {
       const edges: Edge[] = [];
-      
-      connectedNodes
-        .forEach(edge => {
-          const graphEdge = {
-            weight: v.dist(node, edge.destination),
-            destination: nodeLookup.get(edge.destination)
-          };
-          if (graphEdge.destination !== undefined) {
-            edgeLookup.set(graphEdge as Edge, edge);
-            edges.push(graphEdge as Edge);
-          }
-        });
+
+      connectedNodes.forEach(edge => {
+        const graphEdge = {
+          weight: v.dist(node, edge.destination),
+          destination: nodeLookup.get(edge.destination)
+        };
+        if (graphEdge.destination !== undefined) {
+          edgeLookup.set(graphEdge as Edge, edge);
+          edges.push(graphEdge as Edge);
+        }
+      });
 
       graphNode.edges = edges;
     }
@@ -275,7 +330,7 @@ const findPath = (nodes: RrtNode[], edges: Map<RrtNode, RRTEdge<RrtNode>[]>) => 
 
   const nodePath = result.getBestPath();
 
-  const resultPath: PathNode[] = [];
+  const resultPath: PathNode<Q>[] = [];
   nodePath.forEach((node, i) => {
     const next = i !== nodePath.length - 1 ? nodePath[i + 1] : null;
     node.edges?.forEach(edge => {
@@ -284,89 +339,101 @@ const findPath = (nodes: RrtNode[], edges: Map<RrtNode, RRTEdge<RrtNode>[]>) => 
         resultPath.push({
           x: node.x,
           y: node.y,
-          samples: rrtEdge?.samples 
+          samples: rrtEdge?.samples
         });
       }
-    })
+    });
   });
 
   return resultPath;
+};
+
+const renderAgent = (ctx: CanvasRenderingContext2D, state: IState) => {
+  const agent = state.getAgent();
+  const lastCollision = state.getLastCollision();
+
+  ctx.fillStyle = "blue";
+  ctx.strokeStyle = "black";
+  ctx.lineWidth = 2;
+
+  ctx.beginPath();
+  ctx.arc(0, 0, agent.radius, 0, 2 * Math.PI);
+  ctx.fill();
+  ctx.stroke();
+
+  if (lastCollision) {
+    ctx.fillStyle = "#ff0000";
+  } else {
+    ctx.fillStyle = "#00ff00";
+  }
+
+  ctx.lineWidth = 1;
+
+  if (state.isSteering) {
+    ctx.beginPath();
+    ctx.arc(agent.radius / 2, -agent.radius / 2, 4, 0, 2 * Math.PI);
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.arc(agent.radius / 2, agent.radius / 2, 4, 0, 2 * Math.PI);
+    ctx.fill();
+    ctx.stroke();
+  } else {
+    ctx.beginPath();
+    ctx.arc(0, 0, 6, 0, 2 * Math.PI);
+    ctx.fill();
+    ctx.stroke();
+  }
+};
+
+const configureRRT = (
+  config: IAlgorithmParameters,
+  algorithm: "RRT" | "RRT*"
+) => {
+  if (config.turnRadius !== undefined) {
+    return dubins2dConfig(config);
+  } else {
+    return holonomic2dConfig(config);
+  }
 };
 
 export const RRTPlanning: React.FC<IRRTPlanningProps> = ({
   example,
   maxExplorationDistance,
   maxIterations,
+  algorithm,
   children
 }) => {
   const [speed, setSpeed] = useState(0);
   const [playInterval, setPlayInterval] = useState<number | undefined>();
   const [isPlaying, setIsPlaying] = useState(false);
-  const [planStep, setPlanStep] = useState<IStepResult<
-    RrtNode,
-    RrtNode
-  > | null>(null);
+  const [planStep, setPlanStep] = useState<
+    IStepResult<RotationalAgentState> | IStepResult<VectLike> | null
+  >(null);
   const [canStep, setCanStep] = useState<boolean>(true);
-  const [path, setPath] = useState<PathNode[] | null>(null);
+  const [path, setPath] = useState<
+    PathNode<RotationalAgentState>[] | PathNode<VectLike>[] | null
+  >(null);
 
-  const [start, setStart] = useState<RrtNode>(() => ({
+  const [start, setStart] = useState<RotationalAgentState>(() => ({
     ...example.initialAgent.position,
     angle: example.initialAgent.angle
   }));
 
-  const [goal, setGoal] = useState<VectLike | null>(null);
-  const [rrtConfig, setRrtConfig] = useState<IRRTOptions<
-    RrtNode,
-    RrtNode
-  > | null>(null);
-  const [rrtPlanner, setRrtPlanner] = useState<RRT<RrtNode, RrtNode> | null>(
-    null
-  );
+  const [goal, setGoal] = useState<RotationalAgentState | null>(null);
+  const [rrtConfig, setRrtConfig] = useState<
+    IRRTStarOptions<RotationalAgentState> | IRRTStarOptions<VectLike> | null
+  >(null);
+  const [rrtPlanner, setRrtPlanner] = useState<
+    RRT<RotationalAgentState> | RRT<VectLike> | null
+  >(null);
   const [floorplanImage, setFloorplanImage] = useState<ImageData | null>(null);
 
   const renderOverlay = (ctx: CanvasRenderingContext2D) => {
-    renderStep(ctx, planStep, goal, example.turnRadius);
+    renderStep(ctx, planStep, goal, example.initialAgent.radius, example.turnRadius);
     if (path) {
       renderPath(ctx, path);
-    }
-  };
-
-  const renderAgent = (ctx: CanvasRenderingContext2D, state: IState) => {
-    const agent = state.getAgent();
-    const lastCollision = state.getLastCollision();
-
-    ctx.fillStyle = "blue";
-    ctx.strokeStyle = "black";
-    ctx.lineWidth = 2;
-
-    ctx.beginPath();
-    ctx.arc(0, 0, agent.radius, 0, 2 * Math.PI);
-    ctx.fill();
-    ctx.stroke();
-
-    if (lastCollision) {
-      ctx.fillStyle = "#ff0000";
-    } else {
-      ctx.fillStyle = "#00ff00";
-    }
-
-    ctx.lineWidth = 1;
-
-    if (state.isSteering) {
-      ctx.beginPath();
-      ctx.arc(agent.radius / 2, -agent.radius / 2, 4, 0, 2 * Math.PI);
-      ctx.fill();
-      ctx.stroke();
-
-      ctx.beginPath();
-      ctx.arc(agent.radius / 2, agent.radius / 2, 4, 0, 2 * Math.PI);
-      ctx.fill();
-      ctx.stroke();
-    } else {
-      ctx.beginPath();
-      ctx.arc(0, 0, 6, 0, 2 * Math.PI);
-      ctx.fill();
-      ctx.stroke();
     }
   };
 
@@ -379,32 +446,21 @@ export const RRTPlanning: React.FC<IRRTPlanningProps> = ({
   useEffect(() => {
     if (floorplanImage === null || goal === null) return;
 
-    if (example.turnRadius !== undefined) {
-      setRrtConfig(
-        dubins2dConfig(
+    setRrtConfig(
+      configureRRT(
+        {
           floorplanImage,
           goal,
-          example.initialAgent.radius,
+          agentRadius: example.initialAgent.radius,
           isEmpty,
           maxExplorationDistance,
           maxIterations,
-          example.turnRadius,
-          example.goalBias
-        )
+          turnRadius: example.turnRadius,
+          goalBias: example.goalBias
+        },
+        algorithm
       )
-    } else {
-      setRrtConfig(
-        holonomic2dConfig(
-          floorplanImage,
-          goal,
-          example.initialAgent.radius,
-          isEmpty,
-          maxExplorationDistance,
-          maxIterations,
-          example.goalBias
-        )
-      );
-    }
+    );
   }, [example, floorplanImage, goal, maxExplorationDistance]);
 
   useEffect(() => {
@@ -413,7 +469,13 @@ export const RRTPlanning: React.FC<IRRTPlanningProps> = ({
         rrtPlanner.options = rrtConfig;
         setRrtPlanner(rrtPlanner);
       } else {
-        setRrtPlanner(new RRT(rrtConfig));
+        if (example.turnRadius !== undefined) {
+          const config = rrtConfig as IRRTOptions<RotationalAgentState>;
+          setRrtPlanner(new RRT(config));
+        } else {
+          const config = rrtConfig as IRRTOptions<VectLike>;
+          setRrtPlanner(new RRT(config));
+        }
       }
     }
   }, [rrtConfig, rrtPlanner]);
@@ -422,7 +484,16 @@ export const RRTPlanning: React.FC<IRRTPlanningProps> = ({
     if (rrtPlanner?.generator) {
       return rrtPlanner.generator;
     } else if (rrtPlanner) {
-      return rrtPlanner.generatePlan(start);
+      if (example.turnRadius !== undefined) {
+        const initialState = start as RotationalAgentState;
+        return rrtPlanner.generatePlan(initialState);
+      } else {
+        const initialState = start as VectLike;
+        return rrtPlanner.generatePlan({
+          ...initialState,
+          angle: 0 // ignore angle for holonomic configuration
+        });
+      }
     } else {
       return null;
     }
@@ -468,7 +539,18 @@ export const RRTPlanning: React.FC<IRRTPlanningProps> = ({
     if (!rrtPlanner?.generator) {
       setGoal({
         x: Math.floor(position.x),
-        y: Math.floor(position.y)
+        y: Math.floor(position.y),
+        angle: 0
+      });
+    }
+  };
+
+  const handleDrag = (drag: {x1: number, y1: number, x2: number, y2: number}) => {
+    if (!rrtPlanner?.generator) {
+      setGoal({
+        x: Math.floor(drag.x1),
+        y: Math.floor(drag.y1),
+        angle: v.sub({x: drag.x2, y: drag.y2}, {x: drag.x1, y: drag.y1}).angle()
       });
     }
   };
@@ -489,14 +571,12 @@ export const RRTPlanning: React.FC<IRRTPlanningProps> = ({
         setCanStep(false);
         setIsPlaying(false);
 
-        const [nodes, edges] = next.value;
-        const last = nodes[nodes.length - 1];
-        if (goal && v.dist(last, goal) < example.initialAgent.radius) {
+        const {nodes, edges, status} = next.value;
+        if (goal && status === Status.GoalFound) {
           setPath(findPath(nodes, edges));
         }
-      } else {
-        setPlanStep(next.value);
       }
+      setPlanStep(next.value);
     }
   }, [getGenerator, example, goal]);
 
@@ -540,6 +620,8 @@ export const RRTPlanning: React.FC<IRRTPlanningProps> = ({
     }
   }, [speed, isPlaying, startPlay]);
 
+  const flowchart = example.algorithm === "RRT" ? RrtFlowchart : RrtStarFlowchart;
+
   const decision =
     planStep?.isPassed !== undefined
       ? planStep?.isPassed
@@ -566,7 +648,13 @@ export const RRTPlanning: React.FC<IRRTPlanningProps> = ({
       <div className={rowCss}>
         <div className={containerCss}>
           <div className={environmentArea}>
-            <div className={iterationCss}>{planStep ? <>Iteration: {planStep.i} / {maxIterations}</> : null}</div>
+            <div className={iterationCss}>
+              {planStep ? (
+                <>
+                  Iteration: {planStep.i} / {maxIterations}
+                </>
+              ) : null}
+            </div>
             <Floorplan
               imageUrl={example.floorplanUrl}
               renderOverlay={renderOverlay}
@@ -578,13 +666,14 @@ export const RRTPlanning: React.FC<IRRTPlanningProps> = ({
               onAgentMove={onAgentMove}
               onFloorplanChange={onFloorplanChange}
               onSelectPosition={handleClick}
+              onDragPosition={handleDrag}
               tabIndex={0}
             />
           </div>
         </div>
         <div>
           <Mermaid id="flowchart">
-            {speed === 1 ? flowchart() : flowchart(planStep?.status, decision)}
+            {speed === 0 || !isPlaying ? flowchart(planStep?.status, decision) : flowchart()}
           </Mermaid>
         </div>
       </div>

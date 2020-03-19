@@ -14,28 +14,28 @@ const EXAMPLES: IMotionPlanningExamples = {
     isSteering: false,
     floorplanUrl: exampleFloorplan,
     initialAgent,
-    algorithm: "RRT",
+    algorithm: "RRT*"
   },
   "Drone - Goal bias 5%": {
     isSteering: false,
     floorplanUrl: exampleFloorplan,
     initialAgent,
     goalBias: 0.05,
-    algorithm: "RRT",
+    algorithm: "RRT*"
   },
   "Drone - Goal bias 10%": {
     isSteering: false,
     floorplanUrl: exampleFloorplan,
     initialAgent,
     goalBias: 0.1,
-    algorithm: "RRT",
+    algorithm: "RRT*"
   },
   "Vacuum Cleaner (Dubins Path)": {
     isSteering: true,
     floorplanUrl: exampleFloorplan,
     initialAgent,
     turnRadius: 40,
-    algorithm: "RRT"
+    algorithm: "RRT*"
   },
   "Vacuum Cleaner - Goal bias 10%": {
     isSteering: true,
@@ -43,7 +43,7 @@ const EXAMPLES: IMotionPlanningExamples = {
     initialAgent,
     turnRadius: 40,
     goalBias: 0.1,
-    algorithm: "RRT",
+    algorithm: "RRT*"
   }
 };
 
