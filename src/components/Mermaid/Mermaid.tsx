@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef, useId } from "react";
 import mermaid from 'mermaid';
-import { createPortal } from "react-dom";
 
 mermaid.initialize({
   theme: "neutral",
