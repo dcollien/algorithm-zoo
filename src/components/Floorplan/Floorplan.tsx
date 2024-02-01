@@ -7,7 +7,7 @@ import React, {
   KeyboardEventHandler,
   useRef
 } from "react";
-import { css } from "emotion";
+import { css } from '@emotion/css';
 import { AnimatedCanvas } from "../AnimatedCanvas/AnimatedCanvas";
 import { v, VectLike } from "../../utils/vector";
 import { M } from "../../utils/math";

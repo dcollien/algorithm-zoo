@@ -10,7 +10,7 @@ import {
 import { NodeInfo } from "../../components/Graph/NodeInfo";
 import { StepPlayer } from "../../components/StepPlayer/StepPlayer";
 import { Mermaid } from "../../components/Mermaid/Mermaid";
-import { css } from "emotion";
+import { css } from '@emotion/css';
 import {
   ISearch,
   startResult,
@@ -20,6 +20,7 @@ import { GraphNode, Edge } from "../../dataStructures/Graph";
 import { DataCollectionDiagram } from "../../components/DataCollectionDiagram/DataCollectionDiagram";
 import { IMember } from "../../algorithms/DiscreteSearch/nodeSets";
 import { toolbarContainer } from "../../styles/toolbar";
+import useTick from "../../hooks/useTick";
 
 interface IGraphSearchProps {
   search: ISearch;
@@ -87,7 +88,6 @@ export const GraphSearch: React.FC<IGraphSearchProps> = ({
   const [isRendering, setIsRendering] = useState(true);
   const [isPlaying, setIsPlaying] = useState(false);
   const [speed, setSpeed] = useState(0);
-  const [playInterval, setPlayInterval] = useState<number | undefined>();
   const [canStep, setCanStep] = useState(true);
   const [searchGenerator, setSearchGenerator] = useState(() =>
     search.search(start, isGoal, heuristic)
@@ -100,15 +100,59 @@ export const GraphSearch: React.FC<IGraphSearchProps> = ({
     () => new Map<Edge, EdgeStyle>()
   );
 
-  const isStepInFlowchart = useCallback(
-    (candidateSearchStep: SearchStepResult | undefined) => {
-      return (
-        candidateSearchStep &&
-        search.flowchart?.steps.has(candidateSearchStep.status)
-      );
-    },
-    [search]
-  );
+  const isStepInFlowchart = (candidateSearchStep: SearchStepResult | undefined) =>
+    candidateSearchStep &&
+    search.flowchart?.steps.has(candidateSearchStep.status);
+
+  const [play, pause] = useTick(() => {
+    onStep();
+  }, speed ? 100 : 500);
+
+  const onStop = () => {
+    setIsPlaying(false);
+  };
+
+  const onReset = () => {
+    onStop();
+    setSearchGenerator(search.search(start, isGoal, heuristic));
+    setSearchStep(startResult);
+    setCanStep(true);
+    setIsRendering(true);
+  };
+
+  const onUpdate = (dt: number) => {
+    //setIsRendering(false);
+  };
+
+  const onStep = () => {
+    let nextSearchStep;
+    let isDone = false;
+    do {
+      const nextResult = searchGenerator.next();
+      if (nextResult.done) {
+        setCanStep(false);
+        isDone = true;
+        break;
+      }
+      nextSearchStep = nextResult.value;
+    } while (!isStepInFlowchart(nextSearchStep));
+
+    if (!isDone && nextSearchStep) {
+      setSearchStep(nextSearchStep);
+    }
+
+    setIsRendering(true);
+  };
+
+  const onPlay = () => {
+    if (canStep) {
+      setIsPlaying(true);
+    }
+  };
+  
+  const onSpeedToggle = () => {
+    setSpeed(1 - speed);
+  };
 
   useEffect(() => {
     setEdgeStyles(edgeStyles => {
@@ -201,93 +245,27 @@ export const GraphSearch: React.FC<IGraphSearchProps> = ({
     });
   }, [searchStep, graph]);
 
-  const onStop = useCallback(() => {
-    setIsPlaying(false);
-    setPlayInterval(playInterval => {
-      window.clearInterval(playInterval);
-      return undefined;
-    });
-  }, []);
-
-  const onReset = useCallback(() => {
-    onStop();
-    setSearchGenerator(search.search(start, isGoal, heuristic));
-    setSearchStep(startResult);
-    setCanStep(true);
-    setIsRendering(true);
-  }, [search, start, isGoal, heuristic, onStop]);
-
   useEffect(() => {
     onReset();
-  }, [graph, onReset]);
+  }, [graph]);
 
   useEffect(() => {
     setIsRendering(true);
   }, [width, height]);
 
-  const onUpdate = (dt: number) => {
-    //setIsRendering(false);
-  };
-
-  const onStep = useCallback(() => {
-    let nextSearchStep;
-    let isDone = false;
-    do {
-      const nextResult = searchGenerator.next();
-      if (nextResult.done) {
-        setCanStep(false);
-        isDone = true;
-        break;
-      }
-      nextSearchStep = nextResult.value;
-    } while (!isStepInFlowchart(nextSearchStep));
-
-    if (!isDone && nextSearchStep) {
-      setSearchStep(nextSearchStep);
-    }
-
-    setIsRendering(true);
-  }, [isStepInFlowchart, searchGenerator]);
-
-  const onPlay = () => {
-    if (canStep) {
-      setIsPlaying(true);
-      startPlay();
-    }
-  };
-
   useEffect(() => {
     if (!canStep && isPlaying) {
       onStop();
     }
-    return () => {
-      window.clearInterval(playInterval);
-    };
-  }, [canStep, isPlaying, onStop, playInterval]);
-
-  const startPlay = useCallback(() => {
-    setPlayInterval(playInterval => {
-      if (playInterval !== undefined) {
-        window.clearInterval(playInterval);
-      }
-      return window.setInterval(
-        () => {
-          onStep();
-        },
-        speed === 0 ? 500 : 100
-      );
-    });
-  }, [onStep, speed]);
-
-  const onSpeedToggle = () => {
-    setSpeed(1 - speed);
-  };
+  }, [canStep, isPlaying]);
 
   useEffect(() => {
     if (isPlaying) {
-      startPlay();
+      play();
+    } else {
+      pause();
     }
-  }, [speed, isPlaying, startPlay]);
+  }, [isPlaying]);
 
   const chart = search.flowchart?.mermaid || "";
   const styledChartSections = [chart];

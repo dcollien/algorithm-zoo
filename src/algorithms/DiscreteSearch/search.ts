@@ -72,6 +72,11 @@ export function* search(
   expandNode?: (node: GraphNode) => Edge[],
   calculateRank?: (node: GraphNode, pathCost: number) => number
 ): Generator<SearchStepResult> {
+  let current = start;
+  let currentPath: Path | undefined = {
+    cost: 0
+  };
+
   const paths = new Map<GraphNode, Path>();
   const closedSet = new Set<GraphNode>();
 
@@ -99,10 +104,6 @@ export function* search(
   openSet.insert(start, 0);
   yield stepResult(Status.InitOpenSet, {});
 
-  let current = start;
-  let currentPath: Path | undefined = {
-    cost: 0
-  };
   paths.set(current, currentPath);
 
   yield stepResult(Status.InitCurrentNode, {});

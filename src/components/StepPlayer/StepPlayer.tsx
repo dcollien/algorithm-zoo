@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 
-import { css } from "emotion";
+import { css } from '@emotion/css';
 
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
@@ -53,7 +53,6 @@ export const StepPlayer: React.FC<IStepPlayer> = ({
   if (isPlaying === undefined) {
     isPlaying = _isPlaying;
   }
-  
   const toolbar = useToolbarState({ loop: true });
 
   useEffect(() => {

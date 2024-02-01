@@ -1,5 +1,4 @@
-import React from "react";
-import loadable from "@loadable/component";
+import React, { lazy } from "react";
 
 interface IAppProps {
   [key: string]: string;
@@ -9,7 +8,7 @@ interface IDemos {
   [key: string]: React.ComponentType<{ demo: string }> | undefined;
 }
 
-const searchDemo = loadable(() => import("./demos/GraphSearch/AllSearchDemos"));
+const searchDemo = lazy(() => import("./demos/GraphSearch/AllSearchDemos"));
 
 const demos: IDemos = {
   "dfs-random": searchDemo,
@@ -19,8 +18,8 @@ const demos: IDemos = {
   "best-first-search": searchDemo,
   "uniform-cost-search": searchDemo,
   "a-star-search": searchDemo,
-  rrt: loadable(() => import("./demos/MotionPlanning/RRTDemo")),
-  "rrt-star": loadable(() => import("./demos/MotionPlanning/RRTStarDemo")),
+  rrt: lazy(() => import("./demos/MotionPlanning/RRTDemo")),
+  "rrt-star": lazy(() => import("./demos/MotionPlanning/RRTStarDemo")),
 };
 
 const Fallback: React.FC<{ demo: string }> = () => (
@@ -36,6 +35,7 @@ const Fallback: React.FC<{ demo: string }> = () => (
 );
 
 const App: React.FC<IAppProps> = ({ demo }) => {
+  console.log("DEMO", demo)
   const DemoComponent: React.ComponentType<{ demo: string }> =
     demos[demo] || Fallback;
 

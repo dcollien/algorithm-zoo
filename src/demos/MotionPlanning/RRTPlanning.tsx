@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
-
-import { css } from "emotion";
+import { css } from '@emotion/css';
 
 import {
   IAgent,
@@ -35,6 +34,7 @@ import { flowchart as RrtStarFlowchart } from "../../algorithms/SpaceFilling/rrt
 import { Mermaid } from "../../components/Mermaid/Mermaid";
 import { dubinsShortestPath, plotDubinsPathGen } from "../../utils/dubins";
 import { drawArrow } from "../../utils/drawing";
+import useTick from "../../hooks/useTick";
 
 const toolbarCss = css`
   ${toolbarContainer}
@@ -415,6 +415,10 @@ export const RRTPlanning: React.FC<IRRTPlanningProps> = ({
   > | null>(null);
   const [floorplanImage, setFloorplanImage] = useState<ImageData | null>(null);
 
+  const [play, pause] = useTick(() => {
+    onStep();
+  }, speed ? 10 : 500);
+
   const renderOverlay = (ctx: CanvasRenderingContext2D) => {
     renderStep(
       ctx,
@@ -432,6 +436,106 @@ export const RRTPlanning: React.FC<IRRTPlanningProps> = ({
 
   const onFloorplanChange = (floorplan: ImageData) => {
     setFloorplanImage(floorplan);
+  };
+
+  const getGenerator = () => {
+    if (rrtPlanner?.generator) {
+      return rrtPlanner.generator;
+    } else if (rrtPlanner) {
+      if (example.turnRadius !== undefined) {
+        const initialState = start as RotationalAgentState;
+        return rrtPlanner.generatePlan(initialState);
+      } else {
+        const initialState = start as VectLike;
+        return rrtPlanner.generatePlan({
+          ...initialState,
+          angle: 0 // ignore angle for holonomic configuration
+        });
+      }
+    } else {
+      return null;
+    }
+  };
+
+  const onStop = () => {
+    setIsPlaying(false);
+  };
+
+  const onReset = () => {
+    onStop();
+
+    setRrtPlanner(rrtPlanner => {
+      if (rrtPlanner) {
+        rrtPlanner.generator = undefined;
+      }
+      return rrtPlanner;
+    });
+
+    setPlanStep(null);
+    setCanStep(true);
+    setPath(null);
+  };
+
+  const handleClick = (position: { x: number; y: number }) => {
+    if (!rrtPlanner?.generator) {
+      setGoal({
+        x: Math.floor(position.x),
+        y: Math.floor(position.y),
+        angle: 0
+      });
+    }
+  };
+
+  const handleDrag = (drag: {
+    x1: number;
+    y1: number;
+    x2: number;
+    y2: number;
+  }) => {
+    if (!rrtPlanner?.generator) {
+      setGoal({
+        x: Math.floor(drag.x1),
+        y: Math.floor(drag.y1),
+        angle: v
+          .sub({ x: drag.x2, y: drag.y2 }, { x: drag.x1, y: drag.y1 })
+          .angle()
+      });
+    }
+  };
+
+  const onAgentMove = (agent: IAgent) => {
+    setStart({
+      ...agent.position,
+      angle: agent.angle
+    });
+  };
+
+  const onStep = () => {
+    const generator = getGenerator();
+
+    if (generator) {
+      const next = generator.next();
+      if (next.done) {
+        setCanStep(false);
+        setIsPlaying(false);
+
+        const { nodes, edges, status } = next.value;
+        if (goal && status === Status.GoalFound) {
+          setPath(findPath(nodes, edges));
+        }
+      }
+      setPlanStep(next.value);
+    }
+  };
+
+  const onSpeedToggle = () => {
+    setSpeed(1 - speed);
+  };
+
+  const onPlay = () => {
+    if (canStep) {
+      setIsPlaying(true);
+    }
   };
 
   useEffect(() => {
@@ -471,152 +575,23 @@ export const RRTPlanning: React.FC<IRRTPlanningProps> = ({
     }
   }, [rrtConfig, example.algorithm]);
 
-  const getGenerator = useCallback(() => {
-    if (rrtPlanner?.generator) {
-      return rrtPlanner.generator;
-    } else if (rrtPlanner) {
-      if (example.turnRadius !== undefined) {
-        const initialState = start as RotationalAgentState;
-        return rrtPlanner.generatePlan(initialState);
-      } else {
-        const initialState = start as VectLike;
-        return rrtPlanner.generatePlan({
-          ...initialState,
-          angle: 0 // ignore angle for holonomic configuration
-        });
-      }
-    } else {
-      return null;
-    }
-  }, [rrtPlanner, start, example.turnRadius]);
-
-  const onStop = useCallback(() => {
-    setIsPlaying(false);
-    setPlayInterval(playInterval => {
-      window.clearInterval(playInterval);
-      return undefined;
-    });
-  }, []);
-
-  useEffect(() => {
-    if (!canStep && isPlaying) {
-      onStop();
-    }
-    return () => {
-      window.clearInterval(playInterval);
-    };
-  }, [canStep, isPlaying, onStop, playInterval]);
-
-  const onReset = useCallback(() => {
-    onStop();
-
-    setRrtPlanner(rrtPlanner => {
-      if (rrtPlanner) {
-        rrtPlanner.generator = undefined;
-      }
-      return rrtPlanner;
-    });
-
-    setPlanStep(null);
-    setCanStep(true);
-    setPath(null);
-  }, [onStop]);
-
   useEffect(() => {
     onReset();
-  }, [example, onReset]);
-
-  const handleClick = (position: { x: number; y: number }) => {
-    if (!rrtPlanner?.generator) {
-      setGoal({
-        x: Math.floor(position.x),
-        y: Math.floor(position.y),
-        angle: 0
-      });
-    }
-  };
-
-  const handleDrag = (drag: {
-    x1: number;
-    y1: number;
-    x2: number;
-    y2: number;
-  }) => {
-    if (!rrtPlanner?.generator) {
-      setGoal({
-        x: Math.floor(drag.x1),
-        y: Math.floor(drag.y1),
-        angle: v
-          .sub({ x: drag.x2, y: drag.y2 }, { x: drag.x1, y: drag.y1 })
-          .angle()
-      });
-    }
-  };
-
-  const onAgentMove = (agent: IAgent) => {
-    setStart({
-      ...agent.position,
-      angle: agent.angle
-    });
-  };
-
-  const onStep = useCallback(() => {
-    const generator = getGenerator();
-
-    if (generator) {
-      const next = generator.next();
-      if (next.done) {
-        setCanStep(false);
-        setIsPlaying(false);
-
-        const { nodes, edges, status } = next.value;
-        if (goal && status === Status.GoalFound) {
-          setPath(findPath(nodes, edges));
-        }
-      }
-      setPlanStep(next.value);
-    }
-  }, [getGenerator, goal]);
-
-  const onPlay = () => {
-    if (canStep) {
-      setIsPlaying(true);
-      startPlay();
-    }
-  };
+  }, [example]);
 
   useEffect(() => {
     if (!canStep && isPlaying) {
       onStop();
     }
-    return () => {
-      window.clearInterval(playInterval);
-    };
-  }, [canStep, isPlaying, onStop, playInterval]);
-
-  const startPlay = useCallback(() => {
-    setPlayInterval(playInterval => {
-      if (playInterval !== undefined) {
-        window.clearInterval(playInterval);
-      }
-      return window.setInterval(
-        () => {
-          onStep();
-        },
-        speed === 0 ? 500 : 10
-      );
-    });
-  }, [onStep, speed]);
-
-  const onSpeedToggle = () => {
-    setSpeed(1 - speed);
-  };
+  }, [canStep, isPlaying]);
 
   useEffect(() => {
     if (isPlaying) {
-      startPlay();
+      play();
+    } else {
+      pause();
     }
-  }, [speed, isPlaying, startPlay]);
+  }, [isPlaying]);
 
   const flowchart =
     example.algorithm === "RRT" ? RrtFlowchart : RrtStarFlowchart;

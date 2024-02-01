@@ -2,7 +2,7 @@ import React, { useState, FormEvent } from "react";
 import { SimpleSelector } from "../../components/SimpleSelector/SimpleSelector";
 import { RRTPlanning } from "./RRTPlanning";
 import { IAgent } from "../../components/Floorplan/Floorplan";
-import { css } from "emotion";
+import { css } from '@emotion/css';
 
 const inputCss = css`
   display: inline-block;
