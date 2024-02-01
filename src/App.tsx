@@ -35,7 +35,6 @@ const Fallback: React.FC<{ demo: string }> = () => (
 );
 
 const App: React.FC<IAppProps> = ({ demo }) => {
-  console.log("DEMO", demo)
   const DemoComponent: React.ComponentType<{ demo: string }> =
     demos[demo] || Fallback;
 
