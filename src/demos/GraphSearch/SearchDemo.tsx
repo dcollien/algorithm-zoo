@@ -4,7 +4,7 @@ import { ISearch } from "../../algorithms/DiscreteSearch/search";
 import { searches } from "../../algorithms/DiscreteSearch/searchChoices";
 import { SimpleSelector } from "../../components/SimpleSelector/SimpleSelector";
 import { GraphSearch } from "./GraphSearch";
-import { css } from "emotion";
+import { css } from '@emotion/css';
 import { GraphNode } from "../../dataStructures/Graph";
 
 export enum SearchStrategy {

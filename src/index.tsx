@@ -11,7 +11,7 @@ import qs from 'query-string';
 import "milligram";
 import './index.css';
 
-const params = qs.parse(location.search);
+const params = qs.parse(window.location.search);
 
 ReactDOM.render(<App {...params}/>, document.getElementById('root'));
 

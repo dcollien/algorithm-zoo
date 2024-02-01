@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { css } from "emotion";
+import { css } from '@emotion/css';
 import { Button } from "reakit/Button";
 
 interface ISimpleDropdownProps {

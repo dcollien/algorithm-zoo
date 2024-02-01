@@ -1,6 +1,6 @@
 import React, { useRef, useEffect, useContext } from "react";
 
-import { css } from "emotion";
+import { css } from '@emotion/css';
 
 enum Symbol {
   Terminal = "terminal",
