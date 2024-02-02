@@ -270,7 +270,7 @@ export class RRTStar<Q> extends RRT<Q> {
     ]);
 
     const nearestDistances = distances.filter(
-      ([dist, node]) => dist < this.radius
+      ([dist, _node]) => dist < this.radius
     );
 
     return nearestDistances;

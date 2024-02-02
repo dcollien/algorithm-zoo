@@ -39,7 +39,7 @@ const concentric = (
 ) => {
   const maze = Array(width * height).fill(0);
 
-  const get = (x: number, y: number) => maze[y * width + x];
+  //const get = (x: number, y: number) => maze[y * width + x];
   const set = (x: number, y: number, val: number) => {
     maze[y * width + x] = val;
   };

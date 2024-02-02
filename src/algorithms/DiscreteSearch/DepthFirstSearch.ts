@@ -66,7 +66,7 @@ export const DepthFirstSearchRandom: ISearch = {
 
     // randomly order the expanded nodes
     const expandNode = (node: GraphNode) => {
-      const edges = [...node.edges] || [];
+      const edges = [...(node.edges || [])];
       shuffleArray(edges);
       return edges;
     };
@@ -75,12 +75,12 @@ export const DepthFirstSearchRandom: ISearch = {
 };
 
 export const DepthFirstSearchReversed: ISearch = {
-  flowchart,
+flowchart,
   *search(start, isGoal) {
     const stack = new StackNodeSet();
         // randomly order the expanded nodes
         const expandNode = (node: GraphNode) => {
-          const edges = [...node.edges] || [];
+          const edges =  [...(node.edges || [])];
           return edges.reverse();
         };
     yield* search(start, stack, isGoal, expandNode);

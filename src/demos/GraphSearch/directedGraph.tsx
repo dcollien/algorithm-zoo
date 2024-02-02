@@ -1,5 +1,3 @@
-import React from "react";
-
 import { DrawnGraphNode } from "../../components/Graph/Graph";
 import { GraphNode } from "../../dataStructures/Graph";
 import { euclidean } from "../../algorithms/DiscreteSearch/heuristics";

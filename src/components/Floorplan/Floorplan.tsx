@@ -551,7 +551,7 @@ export const Floorplan: React.FC<IFloorplanProps> = ({
   renderAgent,
   onUpdate,
   agent,
-  onAgentMove = (agent: IAgent) => {},
+  onAgentMove = (_agent: IAgent) => {},
   isSteering = false,
   onFloorplanChange,
   isMovementEnabled,

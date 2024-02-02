@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect } from "react";
 import { css } from '@emotion/css';
 
 import {
@@ -391,7 +391,6 @@ export const RRTPlanning: React.FC<IRRTPlanningProps> = ({
   children
 }) => {
   const [speed, setSpeed] = useState(0);
-  const [playInterval, setPlayInterval] = useState<number | undefined>();
   const [isPlaying, setIsPlaying] = useState(false);
   const [planStep, setPlanStep] = useState<IStepResult<
     RotationalAgentState
@@ -432,7 +431,7 @@ export const RRTPlanning: React.FC<IRRTPlanningProps> = ({
     }
   };
 
-  const onUpdate = (dt: number) => {};
+  const onUpdate = (_dt: number) => {};
 
   const onFloorplanChange = (floorplan: ImageData) => {
     setFloorplanImage(floorplan);

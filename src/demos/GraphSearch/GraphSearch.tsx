@@ -120,7 +120,7 @@ export const GraphSearch: React.FC<IGraphSearchProps> = ({
     setIsRendering(true);
   };
 
-  const onUpdate = (dt: number) => {
+  const onUpdate = (_dt: number) => {
     //setIsRendering(false);
   };
 
