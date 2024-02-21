@@ -1,0 +1,208 @@
+import React, { useRef, useEffect, useContext } from "react";
+
+import { css } from '@emotion/css';
+
+enum Symbol {
+  Terminal = "terminal",
+  Process = "process",
+  Decision = "decision"
+}
+
+enum Anchor {
+  Top = "top",
+  Bottom = "bottom",
+  Left = "left",
+  Right = "right"
+}
+
+type Connections = Array<{
+  sourceAnchor: Anchor;
+  targetAnchor: Anchor;
+  targetId: string;
+  label?: string;
+}>;
+
+interface IFlowChartStepProps {
+  type: Symbol;
+  id: string;
+  connections?: Connections;
+  activeConnection?: string;
+  isActive?: boolean;
+  children: React.ReactNode;
+}
+
+const FlowChartContext = React.createContext<RegisterFunction>(null);
+
+const rootCss = css({
+  position: "relative" as "relative"
+});
+
+const stepStyle = {
+  padding: "1rem"
+};
+
+const terminalCss = (isActive: boolean) =>
+  css({
+    ...stepStyle,
+    border: isActive ? "2px solid red" : "1px solid black",
+    borderRadius: "1rem"
+  });
+
+const processCss = (isActive: boolean) =>
+  css({
+    ...stepStyle,
+    border: isActive ? "2px solid red" : "1px solid black",
+  });
+
+const decisionCss = (isActive: boolean) =>
+  css({
+    ...stepStyle,
+    position: "relative",
+    padding: "2rem"
+  });
+
+const decisionShapeCss = css({
+  position: "absolute",
+  top: 0,
+  left: 0,
+  height: "100%",
+  width: "100%"
+});
+
+const decisionPathCss = (isActive:boolean) => css({
+  fill: "transparent",
+  stroke: "black"
+});
+
+export const FlowChartStep: React.FC<IFlowChartStepProps> = ({
+  type,
+  id,
+  connections = [],
+  activeConnection,
+  isActive = false,
+  children
+}) => {
+  const ref = useRef<HTMLDivElement>(null);
+  const registerConnections = useContext(FlowChartContext);
+
+  useEffect(() => {
+    if (ref.current !== null && registerConnections !== null) {
+      registerConnections(id, ref.current, connections);
+    }
+  }, [ref.current, connections, id, children]);
+  
+  const stepCss =
+    type === Symbol.Terminal
+      ? terminalCss(isActive)
+      : type === Symbol.Process
+      ? processCss(isActive)
+      : type === Symbol.Decision
+      ? decisionCss(isActive)
+      : undefined;
+
+  return (
+    <div ref={ref}>
+      {type === Symbol.Decision && (
+        <svg
+          viewBox="0 0 100 100"
+          preserveAspectRatio="none"
+          className={decisionShapeCss}
+        >
+          <path d="M2,50 50,2 98,50 50,98z" className={decisionPathCss(isActive)} />
+        </svg>
+      )}
+      <div className={stepCss}>{children}</div>
+    </div>
+  );
+};
+
+const rowCenteredCss = css({
+  display: "flex",
+  justifyContent: "center",
+  margin: "32px"
+});
+const rowSpacedCss = css({
+  display: "flex",
+  justifyContent: "space-between",
+  margin: "32px"
+});
+
+type RegisterFunction = null | ((id: string, sourceElement: HTMLDivElement, connections: Connections) => void);
+
+interface IFlowChartProps {}
+
+export const FlowChart: React.FC<IFlowChartProps> = () => {
+  const children = (
+    <>
+      <div className={rowCenteredCss}>
+        <FlowChartStep
+          id="start"
+          isActive={true}
+          type={Symbol.Terminal}
+          connections={[
+            {
+              targetId: "doThing",
+              sourceAnchor: Anchor.Bottom,
+              targetAnchor: Anchor.Top
+            }
+          ]}
+        >
+          Start
+        </FlowChartStep>
+      </div>
+      <div className={rowCenteredCss}>
+        <FlowChartStep
+          id="doThing"
+          type={Symbol.Process}
+          connections={[
+            {
+              targetId: "decision",
+              sourceAnchor: Anchor.Bottom,
+              targetAnchor: Anchor.Top
+            }
+          ]}
+        >
+          Do Thing
+        </FlowChartStep>
+      </div>
+      <div className={rowCenteredCss}>
+        <FlowChartStep
+          id="decision"
+          type={Symbol.Decision}
+          connections={[
+            {
+              targetId: "end",
+              sourceAnchor: Anchor.Bottom,
+              targetAnchor: Anchor.Top
+            },
+            {
+              targetId: "doThing",
+              sourceAnchor: Anchor.Right,
+              targetAnchor: Anchor.Right,
+            }
+          ]}
+        >
+          Decision
+        </FlowChartStep>
+      </div>
+      <div className={rowCenteredCss}>
+        <FlowChartStep id="end" type={Symbol.Terminal}>
+          Do Thing
+        </FlowChartStep>
+      </div>
+    </>
+  );
+
+  const onRegister: RegisterFunction = (id, sourceElement, connections) => {
+
+  };
+
+  return (
+    <div className={rootCss}>
+      <svg className={backdropCss}></svg>
+      <FlowChartContext.Provider value={onRegister}>
+        {children}
+      </FlowChartContext.Provider>
+    </div>
+  );
+};

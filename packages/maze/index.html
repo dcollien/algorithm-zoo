@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta name="viewport" content="width=640" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/foundation/6.3.0/css/foundation-flex.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/foundation-icons/3.0/foundation-icons.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/sweetalert/1.1.3/sweetalert.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/sweetalert/1.1.3/sweetalert.min.js"></script>
+    <script type="module" src="/src/main.js"></script>
+    <style>
+        html {
+            margin: 0;
+        }
+
+        body {
+            margin: 0;
+        }
+
+        .container {
+            display: flex;
+            flex-direction: row;
+            flex-wrap: nowrap;
+            width: 100%;
+            padding: 2px;
+            background-color: rgb(240, 240, 250);
+        }
+
+        #maze-canvas {
+            width: auto;
+            flex-shrink: 1;
+            border: 1px solid black;
+            cursor: crosshair;
+        }
+
+        .panel {
+            margin: 0;
+        }
+
+        .toolpanel {
+            flex-grow: 1;
+            background-color: rgb(58, 136, 186);
+        }
+
+        .maze-build {
+            display: inline-block;
+            float: right;
+        }
+
+        #notes {
+            padding: 4px;
+        }
+
+        .current {
+        	background-color: rgb(0, 200, 127);
+            border: 1px solid rgba(0, 80, 50, 0.8);
+            border-radius: 50%;
+        }
+
+        .expand {
+            background-color: rgb(150, 0, 150);
+            border-radius: 50%;
+            display: inline-block;
+            width: 6px;
+            height: 6px;
+            position: absolute;
+            top: 1px;
+        }
+
+        .path {
+            background-color: rgba(0, 0, 255, 0.8);
+            display: inline-block;
+            width: 5px;
+            height: 5px;
+            position: absolute;
+            top: 1px;
+        }
+
+        .open {
+            background-color: rgb(240, 131, 251);
+        }
+
+        .closed {
+            background-color: rgb(250, 219, 182);
+        }
+
+        .legend-item {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            position: relative;
+        }
+
+        .legend label {
+            display: inline;
+            margin-right: 8px;
+            border: 1px solid #eee;
+            padding: 2px;
+            padding-left: 6px;
+            padding-right: 6px;
+        }
+
+        .tool {
+            display: inline-block;
+            border: 1px solid #666666;
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+            position: relative;
+        }
+
+        .tool[data-active='true'] {
+            background-color: #aac;
+        }
+
+        .tool:hover {
+            border: 1px solid #444444;
+            background-color: #aaaaaa;
+        }
+
+        .tool.active {
+            border: 1px solid #666666;
+            background-color: #aaaaaa;
+        }
+
+        .paint {
+            border: 1px solid #000000;
+            background-color: #ffffff;
+        }
+
+        .paint.small {
+            width: 8px;
+            height: 8px;
+            position: absolute;
+            top: 5px;
+            left: 5px;
+        }
+
+        .paint.large {
+            width: 16px;
+            height: 16px;
+            position: absolute;
+            top: 1px;
+            left: 1px;
+        }
+
+        .colors {
+            display: inline-block;
+        }
+
+        .color {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 1px solid #aaaaaa;
+            cursor: pointer;
+            margin-bottom: 2px;
+            font-size: 8px;
+            float: left;
+            margin-right: 2px;
+            line-height: 14px;
+            padding: 0;
+            padding-left: 2px;
+        }
+
+        .color[data-active='true'] {
+            border: 2px solid #56c;
+            border-radius: 2px;
+        }
+
+
+        .color:hover {
+            border: 1px solid #666666;
+        }
+
+        .color.red {
+            background-color: #dd0000;
+            color: white;
+        }
+
+        .color.green {
+            background-color: #00dd00;
+            color: black;
+        }
+
+
+        .color.black {
+            background-color: black;
+            color: white;
+        }
+        .color.white {
+            background-color: white;
+            color: black;
+        }
+        .color.grey1 {
+            background-color: rgb(224, 224, 224);
+            color: rgb(32, 32, 32);
+        }
+        .color.grey2 {
+            background-color: rgb(192, 192, 192);
+            color: rgb(96, 96, 96);
+        }
+        .color.grey3 {
+            background-color: rgb(160, 160, 160);
+            color: rgb(224, 224, 224);
+        }
+        .color.grey4 {
+            background-color: rgb(128, 128, 128);
+            color: white;
+        }
+        .color.grey5 {
+            background-color: rgb(96, 96, 96);
+            color: white;
+        }
+
+        .toolpanel-header {
+            background-color: rgb(48, 107, 137);
+            padding: 6px;
+        }
+        .toolpanel-header label {
+            color: rgb(220, 220, 220);
+        }
+
+        .maze-select-options {
+            background-color: rgb(48, 48, 48);
+            color: rgb(200, 200, 200);
+            padding: 6px;
+        }
+        .maze-area {
+            padding: 6px;
+        }
+
+        .maze-select-options label {
+            color: rgb(220, 220, 220);
+        }
+        .maze-select-ui {
+            display: flex;
+            flex-direction: row;
+            justify-content: space-between;
+        }
+        #generate-button {
+            min-width: 130px;
+            height: 2.4375rem;
+            margin-bottom: 0;
+        }
+        #maze-select {
+            margin-bottom: 0;
+            background-color: rgb(63, 63, 63);
+            color: rgb(232, 232, 232);
+            border-color: rgb(104, 104, 104);
+        }
+        #algorithm-select {
+            margin-bottom: 0;
+            background-color: rgb(59, 116, 145);
+            color: rgb(232, 232, 232);
+            border-color: rgb(200, 200, 200);
+        }
+        #tools {
+            padding: 6px;
+            padding-top: 14px;
+            position: relative;
+        }
+        select {
+            background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' version='1.1' width='32' height='24' viewBox='0 0 32 24'><polygon points='0,0 32,0 16,24' style='fill: rgb%28238, 238, 238%29'></polygon></svg>")
+        }
+        .button {
+            background-color: rgb(48, 117, 159);
+            height: 28px;
+            line-height: 28px;
+            padding: 0;
+            padding-left: 12px;
+            padding-right: 12px;
+        }
+        #speed {
+            background-color: rgb(48, 117, 159);
+            color: rgb(232, 232, 232);
+            width: 80px;
+            font-size: 12px;
+            height: 28px;
+            float: right;
+            padding: 0;
+            padding-left: 12px;
+            padding-right: 24px;
+        }
+        #info-panel {
+            padding: 2px;
+            background-color: rgb(27, 52, 64);
+            color: rgb(232, 232, 232);
+        }
+
+        .container {
+            padding: 0;
+        }
+
+        #info-container {
+            position: absolute;
+            top: 58px;
+            bottom: 4px;
+            height: auto;
+            left: 4px;
+            right: 4px;
+            overflow: auto;
+        }
+
+        .drawing-tools-label {
+            display: inline-block;
+            font-size: 14px;
+            vertical-align: top;
+        }
+
+        #path-cost-display {
+            float: right;
+        }
+
+        #share-button {
+            float: right;
+            margin-right: 6px;
+        }
+
+        #setup {
+            padding: 20px;
+        }
+        @media (max-width: 850px) {
+            .container {
+                flex-wrap: wrap;
+            }
+            .panel {
+                width: 100%;
+            }
+            #info-container {
+                left: 0;
+                right: 0;
+                bottom: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container" id="setup" style="display: none;">
+    </div>
+    <div class="container" id="display" style="display: none;">
+        <div class="panel">
+            <div id="maze-environment-chooser" class="maze-select-options">
+                <label>Environment:</label>
+                <div class="maze-select-ui">
+                    <select id="maze-select">
+                    </select>
+                    <button class="button" id="generate-button"><span class="fi-widget"></span> Generate</button>
+                </div>
+            </div>
+            <div class="maze-area">
+                <div class="legend">
+                    <label><div class="legend-item open"></div> Open</label>
+                    <label><div class="legend-item closed"></div> Closed</label>
+                    <label><div class="legend-item current"></div> Current</label>
+                    <label><div class="legend-item"><div class="expand"></div></div> Neighbours</label>
+                    <label><div class="legend-item"><div class="path"></div></div> Path</label>
+                </div>
+                <div id="path-cost-display">Path Cost: <span id="path-cost">0</span></div>
+                <div class="paint-tools">
+                    <span class="drawing-tools-label">Drawing Tools: </span>
+                    <div class="tool" id="tool-small">
+                        <div class="paint small" title="Small"></div>
+                    </div>
+                    <div class="tool" id="tool-large">
+                        <div class="paint large" title="Large"></div>
+                    </div>
+                    <div class="colors" id="color-select">
+                        <div class="color white" title="Cost 1" id="color-empty">1</div>
+                        <div class="color grey1" title="Cost 2" id="color-weight1">2</div>
+                        <div class="color grey2" title="Cost 3" id="color-weight2">3</div>
+                        <div class="color grey3" title="Cost 4" id="color-weight3">4</div>
+                        <div class="color grey4" title="Cost 5" id="color-weight4">5</div>
+                        <div class="color grey5" title="Cost 6" id="color-weight5">6</div>
+                        <div class="color black" title="Wall" id="color-wall">&infin;</div>
+                        <div class="color red" title="Goal" id="color-goal">&hearts;</div>
+                        <div class="color green" title="Start" id="color-start">&rarr;</div>
+                    </div>
+                </div>
+                <canvas id="maze-canvas">
+                    Not supported by this browser
+                </canvas>
+            </div>
+            <div id="externalLinks" style="display: none; text-align: center;"></div>
+            <button id="share-button" class="button"><span class="fi-share"></span> Share</button>
+        </div>
+        <div class="toolpanel panel">
+            <div class="toolpanel-header">
+                <label>Algorithm:</label>
+                <select id="algorithm-select">
+                </select>
+            </div>
+            <div id="tools">
+                <select id="speed">
+                    <option value="-100">Fastest</option>
+                    <option value="-10">Faster</option>
+                    <option value="0" selected>Fast</option>
+                    <option value="16">Brisk</option>
+                    <option value="32">Medium</option>
+                    <option value="64">Slow</option>
+                    <option value="96">Slowest</option>
+                </select>
+                <button class="button" id="run-button" title="Run"><span class="fi-play"></span></button>
+                <button class="button secondary" id="step-button" title="Step"><span class="fi-next"></span></button>
+                <button class="button secondary" id="reset-button" title="Reset"><span class="fi-refresh"></span></button>
+
+                <div id="info-container" id="info-container">
+                    <div id="info-panel">
+                        <div id="notes">
+                        </div>
+                        <div style="padding: 4px; border: 1px solid rgb(127, 127, 127); background-color: rgb(18, 43, 55); overflow: scroll;">
+                            <pre style="font-size: 12px; color: rgb(250, 250, 250); font-family: monospace; font-weight: 600;" id="code"></pre>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
